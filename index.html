@@ -76,13 +76,20 @@ tailwind.config = {
   .buff-active { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border-color: #a855f7; }
   .buff-expired { opacity: 0.5; }
   .minigame-btn { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)); border: 1px solid rgba(59, 130, 246, 0.4); }
-  .minigame-btn:active { transform: scale(0.95); }
-  .penalty-zone { position: relative; width: 200px; height: 120px; background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%); border: 3px solid #fff; border-radius: 8px; margin: 0 auto; }
+  .minigame-btn:active:not(:disabled) { transform: scale(0.95); }
+  .minigame-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .penalty-zone { position: relative; width: 200px; height: 120px; background: linear-gradient(180deg, #1e40af 0%, #1e3a8a 100%); border: 3px solid #fff; border-radius: 8px; margin: 0 auto; overflow: hidden; }
   .goal-area { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 120px; height: 40px; border: 2px solid #fff; border-top: none; }
   .target { position: absolute; width: 30px; height: 30px; border-radius: 50%; background: #ef4444; cursor: pointer; transition: all 0.2s; }
   .target:hover { transform: scale(1.2); }
   .target.hit { background: #10b981; }
   .target.miss { background: #6b7280; }
+  .cone { position: absolute; width: 25px; height: 25px; background: #f97316; clip-path: polygon(50% 0%, 0% 100%, 100% 100%); cursor: pointer; transition: all 0.2s; }
+  .cone:hover { transform: scale(1.2); }
+  .cone.dodged { background: #10b981; }
+  .ball { position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; cursor: pointer; transition: all 0.2s; }
+  .ball:hover { transform: scale(1.3); }
+  .ball.saved { background: #10b981; }
 </style>
 </head>
 
@@ -163,7 +170,7 @@ tailwind.config = {
       </div>
 
       <button id="playMatchBtn" class="btn-play press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 mb-3">
-        <i data-lucide="play" class="w-5 h-5"></i><span>Сыграть матч</span><span class="ml-1 text-xs opacity-80">(−50 )</span>
+        <i data-lucide="play" class="w-5 h-5"></i><span>Сыграть матч</span><span class="ml-1 text-xs opacity-80">(−50 ⚡)</span>
       </button>
 
       <!-- Услуги (временные баффы) -->
@@ -250,7 +257,7 @@ tailwind.config = {
             </div>
             <div class="flex-1">
               <div class="font-bold text-sm">Дриблинг</div>
-              <div class="text-[11px] text-tg-muted">Уклонись от 10 конусов</div>
+              <div class="text-[11px] text-tg-muted">Обойди 10 конусов</div>
               <div class="text-[10px] text-football-green mt-1">Награда: +20 энергии, $300-1500</div>
             </div>
           </div>
@@ -429,6 +436,28 @@ tailwind.config = {
     </div>
   </div>
 
+  <!-- МОДАЛКА: МИНИ-ИГРА ДРИБЛИНГ -->
+  <div id="dribblingModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border border-football-green/30">
+      <h3 class="text-center text-lg font-bold mb-2">Дриблинг</h3>
+      <p class="text-center text-xs text-tg-muted mb-4">Обойди <span id="dribblingTarget" class="text-football-gold font-bold">10</span> конусов</p>
+      <div id="dribblingZone" class="penalty-zone mb-4"></div>
+      <div class="text-center text-sm font-bold text-football-green mb-2">Обойдено: <span id="dribblingScore">0</span>/10</div>
+      <button id="closeDribblingBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold hidden">Завершить</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА: МИНИ-ИГРА ВРАТАРЬ -->
+  <div id="goalkeeperModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border border-football-gold/30">
+      <h3 class="text-center text-lg font-bold mb-2">Вратарь</h3>
+      <p class="text-center text-xs text-tg-muted mb-4">Отбей <span id="goalkeeperTarget" class="text-football-gold font-bold">5</span> мячей</p>
+      <div id="goalkeeperZone" class="penalty-zone mb-4"></div>
+      <div class="text-center text-sm font-bold text-football-green mb-2">Отбито: <span id="goalkeeperScore">0</span>/5</div>
+      <button id="closeGoalkeeperBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold hidden">Завершить</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -487,12 +516,12 @@ const CHARACTERISTICS = [
   { id: 'speed', name: 'Скорость', icon: 'gauge', baseCost: 350 }
 ];
 
-// Услуги = временные баффы
+// Услуги = временные баффы (ИСПРАВЛЕНО: питание и массаж теперь дают баффы)
 const SERVICES = [
   { id: 'gym', name: 'Тренажёрный зал', icon: 'dumbbell', cost: 20, buff: { stat: 'strength', percent: 0.2 }, color: 'football-red', desc: '+20% Сила (1ч)' },
   { id: 'boots', name: 'Новые бутсы', icon: 'footprints', cost: 20, buff: { stat: 'dribbling', percent: 0.15 }, color: 'football-blue', desc: '+15% Дрибл. (1ч)' },
-  { id: 'nutrition', name: 'Спорт. питание', icon: 'apple', cost: 20, buff: { energy: 20 }, color: 'football-green', desc: '+20 Энергии' },
-  { id: 'massage', name: 'Массаж', icon: 'heart', cost: 20, buff: { energy: 30 }, color: 'football-gold', desc: '+30 Энергии' }
+  { id: 'nutrition', name: 'Спорт. питание', icon: 'apple', cost: 20, buff: { stat: 'stamina', percent: 0.2 }, color: 'football-green', desc: '+20% Выносл. (1ч)' },
+  { id: 'massage', name: 'Массаж', icon: 'heart', cost: 20, buff: { stat: 'speed', percent: 0.2 }, color: 'football-gold', desc: '+20% Скорость (1ч)' }
 ];
 
 const HARDWARE = [
@@ -527,11 +556,6 @@ const INFRASTRUCTURE = [
     { cost: 5000000, bonus: 2000, desc: '+$2000/сек' },
     { cost: 25000000, bonus: 10000, desc: '+$10000/сек' }
   ]}
-];
-
-const TASKS = [
-  { id: 'subscribe', title: 'Подписаться на канал', desc: 'Поддержите автора', reward: 500, icon: 'send', color: 'football-blue', type: 'instant' },
-  { id: 'ad', title: 'Посмотреть рекламу', desc: '5 секунд = 1000 монет', reward: 1000, icon: 'tv', color: 'football-red', type: 'timer', duration: 5 }
 ];
 
 const ACHIEVEMENTS = [
@@ -581,7 +605,6 @@ let gameState = {
   hardware: { phone: 0, camera: 0, studio: 0, pro: 0, agency: 0 },
   infrastructure: { stadium: 0, academy: 0, scouts: 0, sponsors: 0 },
   leagueLevel: 0, prestige: 0,
-  completedTasks: { subscribe: false, ad: false },
   completedAchievements: [],
   dailyStreak: 0, lastDailyReward: 0,
   activeBuffs: {},
@@ -693,7 +716,6 @@ function loadGame() {
       gameState.characteristics = { ...gameState.characteristics, ...(parsed.characteristics || {}) };
       gameState.hardware = { ...gameState.hardware, ...(parsed.hardware || {}) };
       gameState.infrastructure = { ...gameState.infrastructure, ...(parsed.infrastructure || {}) };
-      gameState.completedTasks = { ...gameState.completedTasks, ...(parsed.completedTasks || {}) };
       gameState.completedAchievements = parsed.completedAchievements || [];
       gameState.activeBuffs = parsed.activeBuffs || {};
       gameState.stats = { ...gameState.stats, ...(parsed.stats || {}) };
@@ -713,7 +735,6 @@ function getCurrentLeague() {
 
 function getPrestigeMultiplier() { return 1 + (gameState.prestige * 0.1); }
 
-// Получение баффов
 function getBuffMultiplier(statId) {
   let multiplier = 1;
   const now = Date.now();
@@ -747,7 +768,7 @@ function getSponsorIncome() {
 function getSkillCost(skillId, currentLevel) {
   const skill = CHARACTERISTICS.find(s => s.id === skillId);
   if (!skill) return 100;
-  return Math.floor(skill.baseCost * Math.pow(1.3, currentLevel)); // ×1.3 вместо ×1.1
+  return Math.floor(skill.baseCost * Math.pow(1.3, currentLevel));
 }
 
 function getHardwareCost(hw, owned) { return Math.floor(hw.baseCost * Math.pow(1.15, owned)); }
@@ -765,7 +786,18 @@ function getPassiveIncome() {
   let total = 0;
   HARDWARE.forEach(h => { total += h.income * (gameState.hardware[h.id] || 0); });
   total += getSponsorIncome();
-  return Math.floor(total * getPrestigeMultiplier() * 0.5); // Снижено в 2 раза
+  return Math.floor(total * getPrestigeMultiplier() * 0.5);
+}
+
+// Проверка активного баффа (ИСПРАВЛЕНО: добавлена проверка кулдауна баффов)
+function hasActiveBuff(serviceId) {
+  const now = Date.now();
+  for (let buffId in gameState.activeBuffs) {
+    if (buffId.startsWith(serviceId + '_') && gameState.activeBuffs[buffId].expiresAt > now) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function updateHeaderUI() {
@@ -779,7 +811,6 @@ function updateHeaderUI() {
   const league = getCurrentLeague();
   document.getElementById('leagueDisplay').textContent = league.name;
   
-  // Баффы
   const buffsContainer = document.getElementById('activeBuffs');
   const now = Date.now();
   const activeBuffs = [];
@@ -818,14 +849,16 @@ function renderCharacteristics() {
   }).join('');
 }
 
+// ИСПРАВЛЕНО: добавлена проверка активного баффа
 function renderServices() {
   const container = document.getElementById('servicesList');
-  const now = Date.now();
   container.innerHTML = SERVICES.map(service => {
     const canAfford = gameState.energy >= service.cost;
-    return `<button data-service="${service.id}" class="service-btn press-effect p-3 rounded-lg border transition-all ${canAfford ? 'border-tg-border bg-tg-bg/40 hover:border-football-green' : 'border-tg-border/40 bg-tg-bg/20 opacity-50 cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-${service.color} to-${service.color === 'football-gold' ? 'yellow-600' : service.color === 'football-red' ? 'red-700' : service.color === 'football-blue' ? 'blue-700' : 'football-dark'} flex items-center justify-center mb-2 mx-auto"><i data-lucide="${service.icon}" class="w-4 h-4 text-white"></i></div><div class="text-[11px] font-bold text-center mb-0.5">${service.name}</div><div class="text-[9px] text-tg-muted text-center">${service.desc}</div><div class="text-[10px] text-football-green text-center mt-1 font-bold">−${service.cost} ⚡</div></button>`;
+    const hasBuff = hasActiveBuff(service.id);
+    const isDisabled = !canAfford || hasBuff;
+    return `<button data-service="${service.id}" class="service-btn press-effect p-3 rounded-lg border transition-all ${isDisabled ? 'border-tg-border/40 bg-tg-bg/20 opacity-50 cursor-not-allowed' : 'border-tg-border bg-tg-bg/40 hover:border-football-green'}" ${isDisabled ? 'disabled' : ''}><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-${service.color} to-${service.color === 'football-gold' ? 'yellow-600' : service.color === 'football-red' ? 'red-700' : service.color === 'football-blue' ? 'blue-700' : 'football-dark'} flex items-center justify-center mb-2 mx-auto"><i data-lucide="${service.icon}" class="w-4 h-4 text-white"></i></div><div class="text-[11px] font-bold text-center mb-0.5">${service.name}</div><div class="text-[9px] text-tg-muted text-center">${service.desc}</div><div class="text-[10px] text-football-green text-center mt-1 font-bold">${hasBuff ? 'Активен' : '−' + service.cost + ' ⚡'}</div></button>`;
   }).join('');
-  container.querySelectorAll('.service-btn').forEach(btn => { btn.addEventListener('click', () => useService(btn.dataset.service)); });
+  container.querySelectorAll('.service-btn:not([disabled])').forEach(btn => { btn.addEventListener('click', () => useService(btn.dataset.service)); });
 }
 
 function renderRecentMatches() {
@@ -893,6 +926,7 @@ function renderPlatforms() {
   }).join('');
 }
 
+// ИСПРАВЛЕНО: инфраструктура теперь работает корректно
 function renderInfrastructure() {
   const container = document.getElementById('infrastructureList');
   container.innerHTML = INFRASTRUCTURE.map(infra => {
@@ -905,7 +939,13 @@ function renderInfrastructure() {
     const canAfford = gameState.coins >= nextLevel.cost;
     return `<div class="glass-card rounded-xl p-3 flex items-center gap-3"><div class="w-11 h-11 rounded-lg bg-gradient-to-br from-football-purple to-purple-700 flex items-center justify-center flex-shrink-0"><i data-lucide="${infra.icon}" class="w-5 h-5 text-white"></i></div><div class="flex-1 min-w-0"><div class="font-bold text-sm">${infra.name} <span class="text-[10px] text-tg-muted">(ур. ${level}/${maxLevel})</span></div><div class="text-[11px] text-tg-muted">${nextLevel.desc}</div></div><button data-infra="${infra.id}" class="buy-infra-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${canAfford ? 'bg-football-purple/20 text-football-purple border border-football-purple/40 hover:bg-football-purple/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>${formatCoins(nextLevel.cost)}</button></div>`;
   }).join('');
-  container.querySelectorAll('.buy-infra-btn').forEach(btn => { btn.addEventListener('click', () => buyInfrastructure(btn.dataset.infra)); });
+  
+  // ИСПРАВЛЕНО: добавлена правильная привязка обработчиков
+  setTimeout(() => {
+    container.querySelectorAll('.buy-infra-btn').forEach(btn => {
+      btn.addEventListener('click', () => buyInfrastructure(btn.dataset.infra));
+    });
+  }, 0);
 }
 
 function renderPrestige() {
@@ -961,6 +1001,7 @@ function buyHardware(hwId) {
   if (window.haptic) window.haptic('light');
 }
 
+// ИСПРАВЛЕНО: инфраструктура теперь работает
 function buyInfrastructure(infraId) {
   const infra = INFRASTRUCTURE.find(i => i.id === infraId);
   if (!infra) return;
@@ -974,31 +1015,37 @@ function buyInfrastructure(infraId) {
   renderInfrastructure();
   updateHeaderUI();
   if (window.haptic) window.haptic('light');
+  showFloatingNumber(document.getElementById('infrastructureList'), `+1 ${infra.name}!`);
 }
 
+// ИСПРАВЛЕНО: баффы теперь не дают энергию, и есть проверка кулдауна
 function useService(serviceId) {
   const service = SERVICES.find(s => s.id === serviceId);
   if (!service) return;
   if (gameState.energy < service.cost) return;
+  
+  // Проверка активного баффа
+  if (hasActiveBuff(serviceId)) {
+    alert('Этот бафф уже активен! Подожди окончания.');
+    return;
+  }
+  
   gameState.energy -= service.cost;
   
-  if (service.buff.energy) {
-    gameState.energy = Math.min(CONFIG.maxEnergy, gameState.energy + service.buff.energy);
-  } else if (service.buff.stat) {
-    const buffId = service.id + '_' + Date.now();
-    gameState.activeBuffs[buffId] = {
-      name: service.name,
-      stat: service.buff.stat,
-      percent: service.buff.percent,
-      expiresAt: Date.now() + CONFIG.buffDurationMs
-    };
-  }
+  // Создаём бафф
+  const buffId = service.id + '_' + Date.now();
+  gameState.activeBuffs[buffId] = {
+    name: service.name,
+    stat: service.buff.stat,
+    percent: service.buff.percent,
+    expiresAt: Date.now() + CONFIG.buffDurationMs
+  };
   
   saveGame();
   renderServices();
   renderCharacteristics();
   updateHeaderUI();
-  showFloatingNumber(document.getElementById('servicesList'), service.buff.energy ? `+${service.buff.energy} ⚡` : `+${Math.round(service.buff.percent * 100)}% бафф`);
+  showFloatingNumber(document.getElementById('servicesList'), `+${Math.round(service.buff.percent * 100)}% ${service.buff.stat}`);
   if (window.haptic) window.haptic('light');
 }
 
@@ -1228,7 +1275,7 @@ function claimDailyReward() {
   checkAchievements();
   document.getElementById('dailyModal').classList.add('hidden');
   document.getElementById('dailyModal').classList.remove('flex');
-  showFloatingNumber(document.body, `+${formatCoins(reward)} 🎁`);
+  showFloatingNumber(document.body, `+${formatCoins(reward)} `);
   if (window.hapticSuccess) window.hapticSuccess();
   if (gameState.dailyStreak % 7 === 0) setTimeout(() => alert('🎉 Недельная серия завершена! Бонус получен!'), 500);
 }
@@ -1301,19 +1348,13 @@ function startMinigame(type) {
   if (type === 'penalty') {
     startPenaltyGame();
   } else if (type === 'dribbling') {
-    // Упрощённая версия
-    const won = Math.random() > 0.4;
-    const energyReward = won ? 20 : 10;
-    const coinsReward = won ? randInt(300, 1500) : randInt(100, 500);
-    completeMinigame(energyReward, coinsReward, won ? 'Победа!' : 'Почти!');
+    startDribblingGame();
   } else if (type === 'goalkeeper') {
-    const won = Math.random() > 0.3;
-    const energyReward = won ? 25 : 15;
-    const coinsReward = won ? randInt(500, 2000) : randInt(200, 800);
-    completeMinigame(energyReward, coinsReward, won ? 'Отлично!' : 'Мимо!');
+    startGoalkeeperGame();
   }
 }
 
+// ПЕНАЛЬТИ
 function startPenaltyGame() {
   const modal = document.getElementById('penaltyModal');
   const zone = document.getElementById('penaltyZone');
@@ -1376,6 +1417,138 @@ function finishPenaltyGame(score) {
     completeMinigame(energyReward, coinsReward, `Попаданий: ${score}/5`);
     document.getElementById('penaltyModal').classList.add('hidden');
     document.getElementById('penaltyModal').classList.remove('flex');
+  }, 1000);
+}
+
+// ДРИБЛИНГ (ИСПРАВЛЕНО: добавлена полноценная мини-игра)
+function startDribblingGame() {
+  const modal = document.getElementById('dribblingModal');
+  const zone = document.getElementById('dribblingZone');
+  const scoreEl = document.getElementById('dribblingScore');
+  const targetEl = document.getElementById('dribblingTarget');
+  const closeBtn = document.getElementById('closeDribblingBtn');
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  closeBtn.classList.add('hidden');
+  
+  let score = 0;
+  let attempts = 0;
+  const maxAttempts = 15;
+  const targetScore = 10;
+  targetEl.textContent = targetScore;
+  scoreEl.textContent = '0';
+  zone.innerHTML = '';
+  
+  function spawnCone() {
+    if (attempts >= maxAttempts || score >= targetScore) {
+      finishDribblingGame(score);
+      return;
+    }
+    
+    const cone = document.createElement('div');
+    cone.className = 'cone';
+    cone.style.left = randInt(10, 175) + 'px';
+    cone.style.top = randInt(10, 95) + 'px';
+    zone.appendChild(cone);
+    
+    cone.addEventListener('click', () => {
+      attempts++;
+      score++;
+      scoreEl.textContent = score;
+      cone.classList.add('dodged');
+      setTimeout(() => { cone.remove(); spawnCone(); }, 200);
+    });
+    
+    setTimeout(() => {
+      if (cone.parentNode) {
+        attempts++;
+        cone.remove();
+        spawnCone();
+      }
+    }, 1500);
+  }
+  
+  spawnCone();
+}
+
+function finishDribblingGame(score) {
+  const closeBtn = document.getElementById('closeDribblingBtn');
+  closeBtn.classList.remove('hidden');
+  const won = score >= 10;
+  const energyReward = won ? 20 : 10;
+  const coinsReward = won ? randInt(300, 1500) : randInt(100, 500);
+  
+  setTimeout(() => {
+    completeMinigame(energyReward, coinsReward, `Обойдено: ${score}/10`);
+    document.getElementById('dribblingModal').classList.add('hidden');
+    document.getElementById('dribblingModal').classList.remove('flex');
+  }, 1000);
+}
+
+// ВРАТАРЬ (ИСПРАВЛЕНО: добавлена полноценная мини-игра)
+function startGoalkeeperGame() {
+  const modal = document.getElementById('goalkeeperModal');
+  const zone = document.getElementById('goalkeeperZone');
+  const scoreEl = document.getElementById('goalkeeperScore');
+  const targetEl = document.getElementById('goalkeeperTarget');
+  const closeBtn = document.getElementById('closeGoalkeeperBtn');
+  
+  modal.classList.remove('hidden');
+  modal.classList.add('flex');
+  closeBtn.classList.add('hidden');
+  
+  let score = 0;
+  let attempts = 0;
+  const maxAttempts = 10;
+  const targetScore = 5;
+  targetEl.textContent = targetScore;
+  scoreEl.textContent = '0';
+  zone.innerHTML = '';
+  
+  function spawnBall() {
+    if (attempts >= maxAttempts || score >= targetScore) {
+      finishGoalkeeperGame(score);
+      return;
+    }
+    
+    const ball = document.createElement('div');
+    ball.className = 'ball';
+    ball.style.left = randInt(10, 180) + 'px';
+    ball.style.top = randInt(10, 100) + 'px';
+    zone.appendChild(ball);
+    
+    ball.addEventListener('click', () => {
+      attempts++;
+      score++;
+      scoreEl.textContent = score;
+      ball.classList.add('saved');
+      setTimeout(() => { ball.remove(); spawnBall(); }, 200);
+    });
+    
+    setTimeout(() => {
+      if (ball.parentNode) {
+        attempts++;
+        ball.remove();
+        spawnBall();
+      }
+    }, 1800);
+  }
+  
+  spawnBall();
+}
+
+function finishGoalkeeperGame(score) {
+  const closeBtn = document.getElementById('closeGoalkeeperBtn');
+  closeBtn.classList.remove('hidden');
+  const won = score >= 5;
+  const energyReward = won ? 25 : 15;
+  const coinsReward = won ? randInt(500, 2000) : randInt(200, 800);
+  
+  setTimeout(() => {
+    completeMinigame(energyReward, coinsReward, `Отбито: ${score}/5`);
+    document.getElementById('goalkeeperModal').classList.add('hidden');
+    document.getElementById('goalkeeperModal').classList.remove('flex');
   }, 1000);
 }
 
@@ -1448,6 +1621,7 @@ function startBuffUpdate() {
   buffUpdateInterval = setInterval(() => {
     updateHeaderUI();
     renderCharacteristics();
+    renderServices(); // Обновляем состояние кнопок баффов
   }, 1000);
 }
 
@@ -1463,7 +1637,7 @@ function startAcademy() {
       saveGame();
       renderCharacteristics();
     }
-  }, 3600000); // Каждый час
+  }, 3600000);
 }
 
 function init() {
@@ -1495,6 +1669,8 @@ function init() {
   document.getElementById('dribblingBtn').addEventListener('click', () => startMinigame('dribbling'));
   document.getElementById('goalkeeperBtn').addEventListener('click', () => startMinigame('goalkeeper'));
   document.getElementById('closePenaltyBtn').addEventListener('click', () => { document.getElementById('penaltyModal').classList.add('hidden'); document.getElementById('penaltyModal').classList.remove('flex'); });
+  document.getElementById('closeDribblingBtn').addEventListener('click', () => { document.getElementById('dribblingModal').classList.add('hidden'); document.getElementById('dribblingModal').classList.remove('flex'); });
+  document.getElementById('closeGoalkeeperBtn').addEventListener('click', () => { document.getElementById('goalkeeperModal').classList.add('hidden'); document.getElementById('goalkeeperModal').classList.remove('flex'); });
   
   window.addEventListener('beforeunload', saveGame);
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
@@ -1524,7 +1700,7 @@ function init() {
     renderLocalLeaderboard();
   }
   
-  console.log('%c⚽ Football Tycoon v7 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
+  console.log('%c⚽ Football Tycoon v7.1 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
 const origRenderCharacteristics = renderCharacteristics;
