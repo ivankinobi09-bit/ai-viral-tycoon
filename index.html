@@ -40,21 +40,14 @@
           'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           'fade-in': 'fadeIn 0.3s ease-out',
           'float-up': 'floatUp 1.5s ease-out forwards',
-          'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+          'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          'count-up': 'countUp 2s ease-out'
         },
         keyframes: {
-          slideUp: {
-            '0%': { transform: 'translateY(30px)', opacity: '0' },
-            '100%': { transform: 'translateY(0)', opacity: '1' }
-          },
-          fadeIn: {
-            '0%': { opacity: '0' },
-            '100%': { opacity: '1' }
-          },
-          floatUp: {
-            '0%': { transform: 'translateY(0)', opacity: '1' },
-            '100%': { transform: 'translateY(-60px)', opacity: '0' }
-          }
+          slideUp: { '0%': { transform: 'translateY(30px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
+          fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
+          floatUp: { '0%': { transform: 'translateY(0)', opacity: '1' }, '100%': { transform: 'translateY(-60px)', opacity: '0' } },
+          countUp: { '0%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.2)' }, '100%': { transform: 'scale(1)' } }
         }
       }
     }
@@ -62,117 +55,33 @@
 </script>
 
 <style>
-  html, body {
-    background: #0d1117;
-    color: #e6edf3;
-    overscroll-behavior: none;
-    -webkit-tap-highlight-color: transparent;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-  body {
-    background:
-      radial-gradient(ellipse at top, rgba(16, 185, 129, 0.15), transparent 50%),
-      radial-gradient(ellipse at bottom, rgba(251, 191, 36, 0.1), transparent 50%),
-      #0d1117;
-    min-height: 100vh;
-  }
+  html, body { background: #0d1117; color: #e6edf3; overscroll-behavior: none; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+  body { background: radial-gradient(ellipse at top, rgba(16, 185, 129, 0.15), transparent 50%), radial-gradient(ellipse at bottom, rgba(251, 191, 36, 0.1), transparent 50%), #0d1117; min-height: 100vh; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: #30363d; border-radius: 2px; }
-  .press-effect {
-    transition: transform 0.1s ease, filter 0.1s ease;
-  }
-  .press-effect:active {
-    transform: scale(0.96);
-    filter: brightness(0.9);
-  }
-  .tab-content {
-    transition: opacity 0.25s ease, transform 0.25s ease;
-  }
-  .tab-hidden {
-    opacity: 0;
-    pointer-events: none;
-    position: absolute;
-    transform: translateY(8px);
-  }
-  .tab-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  .press-effect { transition: transform 0.1s ease, filter 0.1s ease; }
+  .press-effect:active { transform: scale(0.96); filter: brightness(0.9); }
+  .tab-content { transition: opacity 0.25s ease, transform 0.25s ease; }
+  .tab-hidden { opacity: 0; pointer-events: none; position: absolute; transform: translateY(8px); }
+  .tab-visible { opacity: 1; transform: translateY(0); }
   .glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
   .glow-gold { box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
-  .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
-  .btn-publish {
-    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    transition: all 0.2s ease;
-  }
-  .btn-publish:hover:not(:disabled) {
-    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
-    transform: translateY(-1px);
-  }
-  .btn-publish:disabled {
-    background: #30363d;
-    color: #8b949e;
-    cursor: not-allowed;
-  }
-  .glass-card {
-    background: rgba(22, 27, 34, 0.7);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(48, 54, 61, 0.6);
-  }
-  .energy-bar {
-    background: linear-gradient(90deg, #10b981 0%, #34d399 100%);
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
-    transition: width 0.3s ease;
-  }
-  .floating-number {
-    position: absolute;
-    pointer-events: none;
-    font-weight: 700;
-    color: #fbbf24;
-    text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
-    animation: floatUp 1.5s ease-out forwards;
-    z-index: 100;
-  }
-  .spinner {
-    border: 3px solid rgba(16, 185, 129, 0.2);
-    border-top-color: #10b981;
-    border-radius: 50%;
-    width: 48px;
-    height: 48px;
-    animation: spin 0.8s linear infinite;
-  }
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-  .nav-item-active {
-    color: #10b981;
-  }
-  .nav-item-active::before {
-    content: '';
-    position: absolute;
-    top: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 32px;
-    height: 3px;
-    background: linear-gradient(90deg, #10b981, #fbbf24);
-    border-radius: 2px;
-  }
+  .btn-publish { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.2s ease; }
+  .btn-publish:hover:not(:disabled) { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); transform: translateY(-1px); }
+  .btn-publish:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+  .glass-card { background: rgba(22, 27, 34, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(48, 54, 61, 0.6); }
+  .energy-bar { background: linear-gradient(90deg, #10b981 0%, #34d399 100%); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); transition: width 0.3s ease; }
+  .floating-number { position: absolute; pointer-events: none; font-weight: 700; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6); animation: floatUp 1.5s ease-out forwards; z-index: 100; }
+  .spinner { border: 3px solid rgba(16, 185, 129, 0.2); border-top-color: #10b981; border-radius: 50%; width: 48px; height: 48px; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .nav-item-active { color: #10b981; }
+  .nav-item-active::before { content: ''; position: absolute; top: -8px; left: 50%; transform: translateX(-50%); width: 32px; height: 3px; background: linear-gradient(90deg, #10b981, #fbbf24); border-radius: 2px; }
   .rank-1 { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #000; }
   .rank-2 { background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: #000; }
   .rank-3 { background: linear-gradient(135deg, #b45309 0%, #92400e 100%); color: #fff; }
-  .loading-skeleton {
-    background: linear-gradient(90deg, #30363d 25%, #3d444d 50%, #30363d 75%);
-    background-size: 200% 100%;
-    animation: loading 1.5s infinite;
-  }
-  @keyframes loading {
-    0% { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
+  .viral-badge { animation: pulse 2s infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 </style>
 </head>
 
@@ -251,10 +160,21 @@
         <div id="stylesList" class="grid grid-cols-2 gap-2"></div>
       </div>
 
+      <!-- Инфо о стоимости -->
+      <div class="glass-card rounded-xl p-3 mb-4 bg-football-green/5 border border-football-green/20">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-tg-muted">Стоимость:</span>
+          <span id="energyCostDisplay" class="text-football-green font-bold">20 </span>
+        </div>
+        <div class="flex items-center justify-between text-xs mt-1">
+          <span class="text-tg-muted">Шанс вирусности:</span>
+          <span id="viralChanceDisplay" class="text-football-gold font-bold">10%</span>
+        </div>
+      </div>
+
       <button id="publishBtn" class="btn-publish press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2">
         <i data-lucide="send" class="w-5 h-5"></i>
         <span>Опубликовать</span>
-        <span class="ml-1 text-xs opacity-80">(−20 )</span>
       </button>
 
       <div class="mt-4 glass-card rounded-xl p-4">
@@ -358,27 +278,34 @@
     </div>
   </nav>
 
-  <!-- МОДАЛКА: РЕЗУЛЬТАТ -->
+  <!-- МОДАЛКА: РЕЗУЛЬТАТ С АНИМАЦИЕЙ -->
   <div id="resultModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-slide-up border border-football-green/30">
       <div class="flex justify-center mb-4">
-        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-football-green to-football-gold flex items-center justify-center glow-green">
+        <div id="resultIcon" class="w-16 h-16 rounded-full bg-gradient-to-br from-football-green to-football-gold flex items-center justify-center glow-green">
           <i data-lucide="trending-up" class="w-8 h-8 text-white"></i>
         </div>
       </div>
-      <h3 class="text-center text-lg font-bold mb-2">Гол!</h3>
+      <h3 class="text-center text-lg font-bold mb-2">Просмотры растут!</h3>
       <p id="resultText" class="text-center text-sm text-tg-text mb-4 leading-relaxed"></p>
+      
       <div id="resultStats" class="grid grid-cols-2 gap-2 mb-4">
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
           <div class="text-[10px] text-tg-muted uppercase">Просмотры</div>
-          <div id="resultViews" class="text-lg font-bold text-football-blue tabular-nums">0</div>
+          <div id="resultViews" class="text-2xl font-bold text-football-blue tabular-nums animate-count-up">0</div>
+          <div id="viewsGrowth" class="text-[10px] text-football-green mt-1">+0/сек</div>
         </div>
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
           <div class="text-[10px] text-tg-muted uppercase">Монеты</div>
-          <div id="resultCoins" class="text-lg font-bold text-football-gold tabular-nums">$0</div>
+          <div id="resultCoins" class="text-2xl font-bold text-football-gold tabular-nums">$0</div>
         </div>
       </div>
-      <button id="closeResultBtn" class="btn-publish press-effect w-full py-3 rounded-xl text-white font-bold">Круто!</button>
+
+      <div id="viralBadge" class="hidden mb-4 p-3 bg-gradient-to-r from-football-gold/20 to-football-red/20 border border-football-gold/40 rounded-lg text-center">
+        <div class="text-xs text-football-gold font-bold viral-badge">🔥 ВИРУСНЫЙ УСПЕХ!</div>
+      </div>
+      
+      <button id="closeResultBtn" class="btn-publish press-effect w-full py-3 rounded-xl text-white font-bold">Отлично!</button>
     </div>
   </div>
 
@@ -395,13 +322,7 @@
 
 <!-- ИГРОВАЯ ЛОГИКА -->
 <script>
-/* =========================================================
-   FOOTBALL MEDIA TYCOON
-   С реальным Firebase рейтингом
-   ========================================================= */
-
 // ========== FIREBASE КОНФИГУРАЦИЯ ==========
-// ЗАМЕНИ ЭТИ ДАННЫЕ НА СВОИ ИЗ FIREBASE CONSOLE
 const firebaseConfig = {
   apiKey: "AIzaSyCsrRWKQvYLZbcK_qrMc4fRskPzBw4H8fU",
   authDomain: "football-tycoon-222ef.firebaseapp.com",
@@ -412,25 +333,24 @@ const firebaseConfig = {
   appId: "1:1096681978144:web:4c8e2536b3d7bf70d37f45"
 };
 
-// Инициализация Firebase
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
+// ========== КОНФИГУРАЦИЯ С РАЗНОЙ СТОИМОСТЬЮ ==========
 const CONFIG = {
   topics: [
-    { id: 'match', name: 'Обзор матча', icon: 'flag', color: 'football-blue' },
-    { id: 'transfer', name: 'Трансферные новости', icon: 'refresh-cw', color: 'football-green' },
-    { id: 'scandal', name: 'Скандалы и слухи', icon: 'alert-circle', color: 'football-red' },
-    { id: 'stats', name: 'Статистика игроков', icon: 'bar-chart-2', color: 'football-gold' }
+    { id: 'match', name: 'Обзор матча', icon: 'flag', color: 'football-blue', baseCost: 20, viralChance: 0.15 },
+    { id: 'transfer', name: 'Трансферные новости', icon: 'refresh-cw', color: 'football-green', baseCost: 15, viralChance: 0.10 },
+    { id: 'scandal', name: 'Скандалы и слухи', icon: 'alert-circle', color: 'football-red', baseCost: 25, viralChance: 0.25 },
+    { id: 'stats', name: 'Статистика игроков', icon: 'bar-chart-2', color: 'football-gold', baseCost: 18, viralChance: 0.12 }
   ],
   styles: [
-    { id: 'shorts', name: 'Shorts/Reels', icon: 'smartphone' },
-    { id: 'long', name: 'Длинное видео', icon: 'video' }
+    { id: 'shorts', name: 'Shorts/Reels', icon: 'smartphone', costMultiplier: 0.7, viewMultiplier: 0.6 },
+    { id: 'long', name: 'Длинное видео', icon: 'video', costMultiplier: 1.5, viewMultiplier: 2.0 }
   ],
-  baseViews: { min: 5000, max: 50000 },
-  baseCoins: { min: 50, max: 500 },
+  baseViews: { min: 3000, max: 10000 },
+  baseCoins: { min: 30, max: 100 },
   maxEnergy: 100,
-  energyCost: 20,
   energyRegenMs: 3000,
   generationMs: 2000,
   passiveIncomeMs: 1000,
@@ -452,25 +372,8 @@ const PLATFORMS = [
 ];
 
 const TASKS = [
-  {
-    id: 'subscribe',
-    title: 'Подписаться на футбольный канал',
-    desc: 'Поддержите автора проекта',
-    reward: 500,
-    icon: 'send',
-    color: 'football-blue',
-    type: 'instant'
-  },
-  {
-    id: 'ad',
-    title: 'Посмотреть рекламу',
-    desc: '5 секунд = 1000 монет',
-    reward: 1000,
-    icon: 'tv',
-    color: 'football-red',
-    type: 'timer',
-    duration: 5
-  }
+  { id: 'subscribe', title: 'Подписаться на футбольный канал', desc: 'Поддержите автора проекта', reward: 500, icon: 'send', color: 'football-blue', type: 'instant' },
+  { id: 'ad', title: 'Посмотреть рекламу', desc: '5 секунд = 1000 монет', reward: 1000, icon: 'tv', color: 'football-red', type: 'timer', duration: 5 }
 ];
 
 let gameState = {
@@ -488,77 +391,53 @@ let gameState = {
   lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v2';
+const SAVE_KEY = 'football_tycoon_save_v3';
 let tg = null;
 let leaderboardUnsubscribe = null;
+let currentViewsGrowth = 0;
 
 // ========== TELEGRAM INIT ==========
 function initTelegram() {
   tg = window.Telegram?.WebApp;
-  if (!tg) {
-    console.log('Запуск вне Telegram');
-    return;
-  }
-
+  if (!tg) { console.log('Запуск вне Telegram'); return; }
   tg.ready();
   tg.expand();
-
   const params = tg.themeParams || {};
   document.documentElement.style.setProperty('--tg-theme-bg-color', params.bg_color || '#0d1117');
   document.documentElement.style.setProperty('--tg-theme-text-color', params.text_color || '#e6edf3');
   document.documentElement.style.setProperty('--tg-theme-button-color', params.button_color || '#10b981');
   document.documentElement.style.setProperty('--tg-theme-button-text-color', params.button_text_color || '#ffffff');
-
   const user = tg.initDataUnsafe?.user;
   if (user) {
     gameState.username = user.first_name || 'Player';
     gameState.userId = user.id.toString();
-    console.log('Игрок:', gameState.username, 'ID:', gameState.userId);
   }
-
   window.haptic = (type = 'light') => {
-    if (tg.HapticFeedback) {
-      tg.HapticFeedback.impactOccurred(type);
-    } else if (navigator.vibrate) {
-      navigator.vibrate(20);
-    }
+    if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(type);
+    else if (navigator.vibrate) navigator.vibrate(20);
   };
-
   window.hapticSuccess = () => {
-    if (tg.HapticFeedback) {
-      tg.HapticFeedback.notificationOccurred('success');
-    } else if (navigator.vibrate) {
-      navigator.vibrate([30, 50, 30]);
-    }
+    if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    else if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
   };
-
-  if (tg.BackButton) {
-    tg.BackButton.onClick(() => switchTab('studio'));
-  }
-
+  if (tg.BackButton) tg.BackButton.onClick(() => switchTab('studio'));
   console.log('✅ Telegram WebApp инициализирован');
 }
 
 // ========== FIREBASE ФУНКЦИИ ==========
 async function syncWithFirebase() {
   if (!gameState.userId) return;
-  
   try {
     const playerRef = database.ref('players/' + gameState.userId);
     const snapshot = await playerRef.once('value');
-    
     if (snapshot.exists()) {
-      // Игрок существует - загружаем данные
       const data = snapshot.val();
-      // Берём лучшие значения из Firebase и локальных
       gameState.coins = Math.max(gameState.coins, data.coins || 0);
       gameState.views = Math.max(gameState.views, data.views || 0);
       gameState.hardware = { ...gameState.hardware, ...(data.hardware || {}) };
       gameState.platformLevel = Math.max(gameState.platformLevel, data.platformLevel || 0);
       gameState.stats.videosCreated = Math.max(gameState.stats.videosCreated, data.stats?.videosCreated || 0);
-      console.log('Данные загружены из Firebase');
     } else {
-      // Новый игрок - создаём запись
       await playerRef.set({
         username: gameState.username,
         coins: gameState.coins,
@@ -568,17 +447,13 @@ async function syncWithFirebase() {
         stats: { videosCreated: gameState.stats.videosCreated },
         lastOnline: Date.now()
       });
-      console.log('Новый игрок создан в Firebase');
     }
     gameState.lastSync = Date.now();
-  } catch (error) {
-    console.error('Ошибка синхронизации:', error);
-  }
+  } catch (error) { console.error('Ошибка синхронизации:', error); }
 }
 
 async function updatePlayerData() {
   if (!gameState.userId || Date.now() - gameState.lastSync < 5000) return;
-  
   try {
     await database.ref('players/' + gameState.userId).update({
       username: gameState.username,
@@ -590,19 +465,12 @@ async function updatePlayerData() {
       lastOnline: Date.now()
     });
     gameState.lastSync = Date.now();
-  } catch (error) {
-    console.error('Ошибка обновления:', error);
-  }
+  } catch (error) { console.error('Ошибка обновления:', error); }
 }
 
 function listenToLeaderboard() {
   const leaderboardRef = database.ref('players');
-  
-  // Отписываемся от предыдущего слушателя если есть
-  if (leaderboardUnsubscribe) {
-    leaderboardUnsubscribe();
-  }
-  
+  if (leaderboardUnsubscribe) leaderboardUnsubscribe();
   leaderboardUnsubscribe = leaderboardRef.on('value', (snapshot) => {
     const players = [];
     snapshot.forEach((childSnapshot) => {
@@ -615,15 +483,10 @@ function listenToLeaderboard() {
         lastOnline: data.lastOnline || 0
       });
     });
-    
-    // Сортируем по просмотрам (убывание)
     players.sort((a, b) => b.views - a.views);
-    
-    // Находим место игрока
     const myIndex = players.findIndex(p => p.userId === gameState.userId);
     const myRank = myIndex === -1 ? players.length + 1 : myIndex + 1;
-    
-    renderLeaderboard(players.slice(0, 50), myRank); // Показываем топ-50
+    renderLeaderboard(players.slice(0, 50), myRank);
     document.getElementById('playersCount').textContent = players.length + ' игроков';
   });
 }
@@ -665,13 +528,82 @@ function getPassiveIncome() {
 }
 function getMultiplier() { return PLATFORMS[gameState.platformLevel].multiplier; }
 
+function getCurrentEnergyCost() {
+  const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
+  const style = CONFIG.styles.find(s => s.id === gameState.selectedStyle);
+  if (!topic || !style) return 20;
+  return Math.floor(topic.baseCost * style.costMultiplier);
+}
+
+function getViralChance() {
+  const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
+  const style = CONFIG.styles.find(s => s.id === gameState.selectedStyle);
+  if (!topic || !style) return 0.1;
+  // Длинные видео имеют больший шанс на вирусность
+  const styleBonus = style.id === 'long' ? 1.5 : 1.0;
+  return Math.min(topic.viralChance * styleBonus, 0.5); // Макс 50%
+}
+
+function calculateViewsAndCoins() {
+  const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
+  const style = CONFIG.styles.find(s => s.id === gameState.selectedStyle);
+  const multiplier = getMultiplier();
+  const energyCost = getCurrentEnergyCost();
+  const viralChance = getViralChance();
+  
+  // Базовые значения
+  let baseViews = randInt(CONFIG.baseViews.min, CONFIG.baseViews.max);
+  let baseCoins = randInt(CONFIG.baseCoins.min, CONFIG.baseCoins.max);
+  
+  // Множитель от формата
+  baseViews *= style.viewMultiplier;
+  baseCoins *= style.viewMultiplier;
+  
+  // Шанс на вирусный успех (зависит от затраченной энергии)
+  const roll = Math.random();
+  let viralMultiplier = 1;
+  let isViral = false;
+  let isSuperViral = false;
+  
+  if (roll < viralChance * 0.2) {
+    // Супер вирусный (20% от вирусного шанса)
+    viralMultiplier = randInt(15, 50);
+    isSuperViral = true;
+  } else if (roll < viralChance) {
+    // Вирусный
+    viralMultiplier = randInt(5, 15);
+    isViral = true;
+  } else if (roll < viralChance * 2) {
+    // Хороший результат
+    viralMultiplier = randInt(2, 5);
+  }
+  
+  // Применяем множители
+  const finalViews = Math.floor(baseViews * viralMultiplier * multiplier);
+  const finalCoins = Math.floor(baseCoins * viralMultiplier * multiplier);
+  
+  return {
+    views: finalViews,
+    coins: finalCoins,
+    isViral: isViral || isSuperViral,
+    isSuperViral: isSuperViral,
+    viralMultiplier: viralMultiplier
+  };
+}
+
 function updateHeaderUI() {
   document.getElementById('coinsDisplay').textContent = formatCoins(gameState.coins);
   document.getElementById('viewsDisplay').textContent = formatNumber(gameState.views);
   document.getElementById('energyText').textContent = `${Math.floor(gameState.energy)}/${CONFIG.maxEnergy}`;
   document.getElementById('energyBar').style.width = (gameState.energy / CONFIG.maxEnergy * 100) + '%';
   document.getElementById('passiveIncomeDisplay').textContent = formatCoins(getPassiveIncome()) + '/сек';
-  document.getElementById('publishBtn').disabled = gameState.energy < CONFIG.energyCost;
+  
+  const cost = getCurrentEnergyCost();
+  document.getElementById('publishBtn').disabled = gameState.energy < cost;
+  document.getElementById('energyCostDisplay').textContent = `${cost} ⚡`;
+  
+  const chance = Math.round(getViralChance() * 100);
+  document.getElementById('viralChanceDisplay').textContent = `${chance}%`;
 }
 
 function renderTopics() {
@@ -689,8 +621,11 @@ function renderTopics() {
         <div class="w-9 h-9 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center">
           <i data-lucide="${topic.icon}" class="w-4 h-4 text-white"></i>
         </div>
-        <span class="font-medium text-sm flex-1 text-left">${topic.name}</span>
-        ${selected ? '<i data-lucide="check-circle-2" class="w-5 h-5 text-football-green"></i>' : ''}
+        <div class="flex-1 min-w-0 text-left">
+          <div class="font-medium text-sm">${topic.name}</div>
+          <div class="text-[10px] text-tg-muted">${topic.baseCost} ⚡ • ${Math.round(topic.viralChance * 100)}% вирусности</div>
+        </div>
+        ${selected ? '<i data-lucide="check-circle-2" class="w-5 h-5 text-football-green flex-shrink-0"></i>' : ''}
       </button>
     `;
   }).join('');
@@ -699,6 +634,7 @@ function renderTopics() {
       gameState.selectedTopic = btn.dataset.topic;
       if (window.haptic) window.haptic('light');
       renderTopics();
+      updateHeaderUI();
       saveGame();
     });
   });
@@ -713,7 +649,10 @@ function renderStyles() {
         selected ? 'border-football-green bg-football-green/10 glow-green' : 'border-tg-border bg-tg-bg/40 hover:border-tg-muted'
       }">
         <i data-lucide="${style.icon}" class="w-4 h-4 ${selected ? 'text-football-green' : 'text-tg-muted'}"></i>
-        <span class="font-medium text-xs flex-1 text-left">${style.name}</span>
+        <div class="flex-1 min-w-0 text-left">
+          <div class="font-medium text-xs">${style.name}</div>
+          <div class="text-[10px] text-tg-muted">×${style.costMultiplier} ⚡ • ×${style.viewMultiplier} </div>
+        </div>
       </button>
     `;
   }).join('');
@@ -722,6 +661,7 @@ function renderStyles() {
       gameState.selectedStyle = btn.dataset.style;
       if (window.haptic) window.haptic('light');
       renderStyles();
+      updateHeaderUI();
       saveGame();
     });
   });
@@ -736,11 +676,12 @@ function renderRecentVideos() {
   }
   container.innerHTML = gameState.stats.recentVideos.slice(0, 5).map(v => {
     const topic = CONFIG.topics.find(t => t.id === v.topic);
+    const viralBadge = v.isSuperViral ? '🔥' : v.isViral ? '⭐' : '';
     return `
       <div class="flex items-center justify-between p-2 bg-tg-bg/40 rounded-lg border border-tg-border">
         <div class="flex items-center gap-2 min-w-0">
           <i data-lucide="${topic?.icon || 'video'}" class="w-3.5 h-3.5 text-tg-muted flex-shrink-0"></i>
-          <span class="text-xs truncate">${topic?.name || 'Видео'}</span>
+          <span class="text-xs truncate">${topic?.name || 'Видео'} ${viralBadge}</span>
         </div>
         <div class="flex items-center gap-3 text-[11px] flex-shrink-0">
           <span class="text-football-blue flex items-center gap-0.5"><i data-lucide="eye" class="w-3 h-3"></i>${formatNumber(v.views)}</span>
@@ -753,23 +694,18 @@ function renderRecentVideos() {
 
 function renderLeaderboard(players, myRank) {
   const container = document.getElementById('leaderboardList');
-  
-  // Обновляем инфо о игроке
   document.getElementById('myRank').textContent = '#' + Math.min(myRank, 999);
   document.getElementById('myViews').textContent = formatNumber(gameState.views) + ' просмотров';
   document.getElementById('myCoins').textContent = formatCoins(gameState.coins);
-
   if (!players || players.length === 0) {
     container.innerHTML = '<div class="p-8 text-center text-tg-muted text-sm">Пока нет игроков. Будь первым!</div>';
     return;
   }
-
   container.innerHTML = players.map((player, index) => {
     const rank = index + 1;
     const isMe = player.userId === gameState.userId;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'bg-tg-bg/40';
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-    
     return `
       <div class="flex items-center gap-3 p-3 ${isMe ? 'bg-football-green/10 border-l-2 border-football-green' : ''}">
         <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm flex-shrink-0">
@@ -826,20 +762,13 @@ function renderPlatforms() {
     const isPast = idx < gameState.platformLevel;
     const isNext = idx === gameState.platformLevel + 1;
     const canAfford = gameState.coins >= p.cost;
-    
     let btnHtml = '';
-    if (isCurrent) {
-      btnHtml = `<span class="text-[11px] bg-football-green/20 text-football-green px-2 py-1.5 rounded-lg font-bold">АКТИВНО</span>`;
-    } else if (isPast) {
-      btnHtml = `<span class="text-[11px] text-tg-muted px-2 py-1.5">Куплено</span>`;
-    } else if (isNext) {
-      btnHtml = `<button data-platform="${idx}" class="buy-platform-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-        canAfford ? 'bg-football-gold/20 text-football-gold border border-football-gold/40 hover:bg-football-gold/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'
-      }" ${canAfford ? '' : 'disabled'}>${p.cost === 0 ? 'Бесплатно' : formatCoins(p.cost)}</button>`;
-    } else {
-      btnHtml = `<span class="text-[11px] text-tg-muted px-2 py-1.5"> ${formatCoins(p.cost)}</span>`;
-    }
-    
+    if (isCurrent) btnHtml = `<span class="text-[11px] bg-football-green/20 text-football-green px-2 py-1.5 rounded-lg font-bold">АКТИВНО</span>`;
+    else if (isPast) btnHtml = `<span class="text-[11px] text-tg-muted px-2 py-1.5">Куплено</span>`;
+    else if (isNext) btnHtml = `<button data-platform="${idx}" class="buy-platform-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+      canAfford ? 'bg-football-gold/20 text-football-gold border border-football-gold/40 hover:bg-football-gold/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'
+    }" ${canAfford ? '' : 'disabled'}>${p.cost === 0 ? 'Бесплатно' : formatCoins(p.cost)}</button>`;
+    else btnHtml = `<span class="text-[11px] text-tg-muted px-2 py-1.5">🔒 ${formatCoins(p.cost)}</span>`;
     return `
       <div class="glass-card rounded-xl p-3 flex items-center gap-3 ${isCurrent ? 'border-football-green/50' : ''}">
         <div class="w-11 h-11 rounded-lg ${
@@ -922,8 +851,10 @@ function buyPlatform(level) {
 }
 
 async function createVideo() {
-  if (gameState.energy < CONFIG.energyCost) return;
-  gameState.energy -= CONFIG.energyCost;
+  const energyCost = getCurrentEnergyCost();
+  if (gameState.energy < energyCost) return;
+  
+  gameState.energy -= energyCost;
   updateHeaderUI();
   if (window.haptic) window.haptic('medium');
 
@@ -936,17 +867,18 @@ async function createVideo() {
   genModal.classList.add('hidden');
   genModal.classList.remove('flex');
 
-  const multiplier = getMultiplier();
-  const views = Math.floor(randInt(CONFIG.baseViews.min, CONFIG.baseViews.max) * multiplier);
-  const coins = Math.floor(randInt(CONFIG.baseCoins.min, CONFIG.baseCoins.max) * multiplier);
-
-  gameState.views += views;
-  gameState.coins += coins;
+  const result = calculateViewsAndCoins();
+  
+  gameState.views += result.views;
+  gameState.coins += result.coins;
   gameState.stats.videosCreated++;
   gameState.stats.recentVideos.unshift({
     topic: gameState.selectedTopic,
     style: gameState.selectedStyle,
-    views, coins,
+    views: result.views,
+    coins: result.coins,
+    isViral: result.isViral,
+    isSuperViral: result.isSuperViral,
     time: Date.now()
   });
   if (gameState.stats.recentVideos.length > 10) gameState.stats.recentVideos.pop();
@@ -954,21 +886,74 @@ async function createVideo() {
   saveGame();
   updateHeaderUI();
   renderRecentVideos();
-  showResult(views, coins);
+  showResult(result);
   if (window.hapticSuccess) window.hapticSuccess();
 }
 
-function showResult(views, coins) {
+function showResult(result) {
   const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
-  document.getElementById('resultText').innerHTML = `Твой контент на тему <b class="text-football-green">${topic.name}</b> набрал популярность!`;
-  document.getElementById('resultViews').textContent = formatNumber(views);
-  document.getElementById('resultCoins').textContent = formatCoins(coins);
+  document.getElementById('resultText').innerHTML = `Твой контент "${topic.name}" набирает популярность!`;
+  
+  // Анимация постепенного роста просмотров
+  const viewsEl = document.getElementById('resultViews');
+  const coinsEl = document.getElementById('resultCoins');
+  const viralBadge = document.getElementById('viralBadge');
+  const viewsGrowthEl = document.getElementById('viewsGrowth');
+  
+  // Сброс
+  viewsEl.textContent = '0';
+  coinsEl.textContent = '$0';
+  viralBadge.classList.add('hidden');
+  
+  // Показываем модалку
   const modal = document.getElementById('resultModal');
   modal.classList.remove('hidden');
   modal.classList.add('flex');
+  
+  // Анимация роста
+  const duration = 2500; // 2.5 секунды
+  const steps = 50;
+  const interval = duration / steps;
+  let currentViews = 0;
+  let currentCoins = 0;
+  
+  const growthInterval = setInterval(() => {
+    currentViews += result.views / steps;
+    currentCoins += result.coins / steps;
+    
+    viewsEl.textContent = formatNumber(Math.floor(currentViews));
+    coinsEl.textContent = formatCoins(Math.floor(currentCoins));
+    
+    // Показываем скорость роста
+    const viewsPerSec = Math.floor(result.views / (duration / 1000));
+    viewsGrowthEl.textContent = `+${formatNumber(viewsPerSec)}/сек`;
+    
+  }, interval);
+  
+  // Показываем вирусный бейдж если есть
+  if (result.isSuperViral) {
+    setTimeout(() => {
+      viralBadge.classList.remove('hidden');
+      viralBadge.innerHTML = '<div class="text-xs text-football-gold font-bold viral-badge">🔥🔥 СУПЕР ВИРУСНЫЙ УСПЕХ! 🔥🔥🔥</div>';
+      if (window.haptic) {
+        tg.HapticFeedback.notificationOccurred('success');
+      }
+    }, 1000);
+  } else if (result.isViral) {
+    setTimeout(() => {
+      viralBadge.classList.remove('hidden');
+      viralBadge.innerHTML = '<div class="text-xs text-football-gold font-bold viral-badge">⭐ ВИРУСНЫЙ УСПЕХ!</div>';
+    }, 1000);
+  }
+  
+  // Сохраняем интервал для закрытия
+  window.currentGrowthInterval = growthInterval;
 }
 
 function closeResult() {
+  if (window.currentGrowthInterval) {
+    clearInterval(window.currentGrowthInterval);
+  }
   const modal = document.getElementById('resultModal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');
@@ -977,7 +962,6 @@ function closeResult() {
 function startTask(taskId, btnEl) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task || gameState.completedTasks[taskId]) return;
-
   if (task.type === 'instant') {
     gameState.coins += task.reward;
     gameState.completedTasks[taskId] = true;
@@ -1031,7 +1015,6 @@ function switchTab(tabName) {
     target.classList.remove('tab-hidden');
     target.classList.add('tab-visible');
   }, 30);
-  
   document.querySelectorAll('.nav-item').forEach(btn => {
     if (btn.dataset.tab === tabName) {
       btn.classList.add('nav-item-active');
@@ -1041,11 +1024,8 @@ function switchTab(tabName) {
       btn.classList.add('text-tg-muted');
     }
   });
-  
   if (window.haptic) window.haptic('light');
-  
   if (tabName === 'shop') { renderHardware(); renderPlatforms(); }
-  else if (tabName === 'leaderboard') { /* Leaderboard обновляется автоматически */ }
   else if (tabName === 'tasks') { renderTasks(); }
   else if (tabName === 'studio') { renderRecentVideos(); }
 }
@@ -1076,7 +1056,6 @@ function startAutoSave() {
 function init() {
   initTelegram();
   loadGame();
-
   renderTopics();
   renderStyles();
   renderRecentVideos();
@@ -1084,9 +1063,7 @@ function init() {
   renderPlatforms();
   renderTasks();
   updateHeaderUI();
-
   if (window.lucide) lucide.createIcons();
-
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
@@ -1095,31 +1072,24 @@ function init() {
   document.getElementById('resultModal').addEventListener('click', (e) => {
     if (e.target.id === 'resultModal') closeResult();
   });
-
   window.addEventListener('beforeunload', saveGame);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) saveGame();
   });
-
   startEnergyRegen();
   startPassiveIncome();
   startAutoSave();
-
-  // Синхронизация с Firebase
   if (gameState.userId) {
     syncWithFirebase().then(() => {
       updateHeaderUI();
       listenToLeaderboard();
     });
   } else {
-    // Если нет userId (запуск вне Telegram), показываем заглушку
     renderLeaderboard([], 0);
   }
-
   console.log('%c Football Media Tycoon запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
-// Переинициализация иконок
 const origRenderTasks = renderTasks;
 const origRenderHardware = renderHardware;
 const origRenderPlatforms = renderPlatforms;
