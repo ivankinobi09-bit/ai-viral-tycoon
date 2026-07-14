@@ -13,6 +13,10 @@
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
 <script>
   tailwind.config = {
     theme: {
@@ -160,6 +164,15 @@
   .rank-1 { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #000; }
   .rank-2 { background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: #000; }
   .rank-3 { background: linear-gradient(135deg, #b45309 0%, #92400e 100%); color: #fff; }
+  .loading-skeleton {
+    background: linear-gradient(90deg, #30363d 25%, #3d444d 50%, #30363d 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+  @keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
 </style>
 </head>
 
@@ -178,9 +191,6 @@
           Football Media Tycoon
         </h1>
       </div>
-      <button id="resetBtn" class="text-tg-muted hover:text-white text-xs press-effect p-1">
-        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
-      </button>
     </div>
 
     <div class="grid grid-cols-3 gap-2">
@@ -244,7 +254,7 @@
       <button id="publishBtn" class="btn-publish press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2">
         <i data-lucide="send" class="w-5 h-5"></i>
         <span>Опубликовать</span>
-        <span class="ml-1 text-xs opacity-80">(−20 ⚡)</span>
+        <span class="ml-1 text-xs opacity-80">(−20 )</span>
       </button>
 
       <div class="mt-4 glass-card rounded-xl p-4">
@@ -289,7 +299,7 @@
     <section id="tab-leaderboard" class="tab-content tab-hidden px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
         <i data-lucide="trophy" class="w-5 h-5 text-football-gold"></i>
-        Топ футбольных медиа
+        Топ игроков
       </h2>
 
       <div class="glass-card rounded-xl p-4 mb-4">
@@ -297,15 +307,20 @@
           <div class="text-xs text-tg-muted mb-1">Твоё место</div>
           <div id="myRank" class="text-3xl font-bold text-football-green">#--</div>
           <div id="myViews" class="text-sm text-tg-muted mt-1">0 просмотров</div>
+          <div id="myCoins" class="text-xs text-football-gold mt-0.5">0 монет</div>
         </div>
       </div>
 
       <div class="glass-card rounded-xl overflow-hidden">
-        <div class="p-3 bg-tg-bg/60 border-b border-tg-border">
+        <div class="p-3 bg-tg-bg/60 border-b border-tg-border flex items-center justify-between">
           <div class="text-xs text-tg-muted uppercase tracking-wider">Глобальный рейтинг</div>
+          <div id="playersCount" class="text-[10px] text-football-green">0 игроков</div>
         </div>
         <div id="leaderboardList" class="divide-y divide-tg-border">
-          <!-- Генерируется JS -->
+          <div class="p-8 text-center">
+            <div class="spinner mx-auto mb-3"></div>
+            <div class="text-xs text-tg-muted">Загрузка рейтинга...</div>
+          </div>
         </div>
       </div>
     </section>
@@ -351,7 +366,7 @@
           <i data-lucide="trending-up" class="w-8 h-8 text-white"></i>
         </div>
       </div>
-      <h3 class="text-center text-lg font-bold mb-2">Гол! </h3>
+      <h3 class="text-center text-lg font-bold mb-2">Гол!</h3>
       <p id="resultText" class="text-center text-sm text-tg-text mb-4 leading-relaxed"></p>
       <div id="resultStats" class="grid grid-cols-2 gap-2 mb-4">
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
@@ -382,8 +397,24 @@
 <script>
 /* =========================================================
    FOOTBALL MEDIA TYCOON
-   Оптимизировано для Telegram Mini Apps
+   С реальным Firebase рейтингом
    ========================================================= */
+
+// ========== FIREBASE КОНФИГУРАЦИЯ ==========
+// ЗАМЕНИ ЭТИ ДАННЫЕ НА СВОИ ИЗ FIREBASE CONSOLE
+const firebaseConfig = {
+  apiKey: "AIzaSyCsrRWKQvYLZbcK_qrMc4fRskPzBw4H8fU",
+  authDomain: "football-tycoon-222ef.firebaseapp.com",
+  databaseURL: "https://football-tycoon-222ef-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "football-tycoon-222ef",
+  storageBucket: "football-tycoon-222ef.firebasestorage.app",
+  messagingSenderId: "1096681978144",
+  appId: "1:1096681978144:web:4c8e2536b3d7bf70d37f45"
+};
+
+// Инициализация Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
 
 const CONFIG = {
   topics: [
@@ -442,20 +473,6 @@ const TASKS = [
   }
 ];
 
-// Фейковые данные для топа (для демонстрации)
-const FAKE_LEADERBOARD = [
-  { name: 'FootballKing', views: 15420000, coins: 245000 },
-  { name: 'GoalMaster', views: 12350000, coins: 198000 },
-  { name: 'SoccerPro', views: 9870000, coins: 156000 },
-  { name: 'ChampionTV', views: 8540000, coins: 134000 },
-  { name: 'BallExpert', views: 7230000, coins: 112000 },
-  { name: 'MatchDay', views: 6120000, coins: 95000 },
-  { name: 'GoalZone', views: 5340000, coins: 82000 },
-  { name: 'FootyFan', views: 4560000, coins: 71000 },
-  { name: 'SportNews', views: 3890000, coins: 61000 },
-  { name: 'GameTime', views: 3120000, coins: 52000 }
-];
-
 let gameState = {
   coins: 100,
   views: 0,
@@ -466,14 +483,16 @@ let gameState = {
   platformLevel: 0,
   completedTasks: { subscribe: false, ad: false },
   stats: { videosCreated: 0, recentVideos: [] },
-  username: 'Player'
+  username: 'Player',
+  userId: null,
+  lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v1';
-
-// Telegram WebApp
+const SAVE_KEY = 'football_tycoon_save_v2';
 let tg = null;
+let leaderboardUnsubscribe = null;
 
+// ========== TELEGRAM INIT ==========
 function initTelegram() {
   tg = window.Telegram?.WebApp;
   if (!tg) {
@@ -484,21 +503,19 @@ function initTelegram() {
   tg.ready();
   tg.expand();
 
-  // Применяем тему Telegram
   const params = tg.themeParams || {};
   document.documentElement.style.setProperty('--tg-theme-bg-color', params.bg_color || '#0d1117');
   document.documentElement.style.setProperty('--tg-theme-text-color', params.text_color || '#e6edf3');
   document.documentElement.style.setProperty('--tg-theme-button-color', params.button_color || '#10b981');
   document.documentElement.style.setProperty('--tg-theme-button-text-color', params.button_text_color || '#ffffff');
 
-  // Получаем данные пользователя
   const user = tg.initDataUnsafe?.user;
   if (user) {
     gameState.username = user.first_name || 'Player';
-    console.log('Игрок:', gameState.username);
+    gameState.userId = user.id.toString();
+    console.log('Игрок:', gameState.username, 'ID:', gameState.userId);
   }
 
-  // Haptic Feedback
   window.haptic = (type = 'light') => {
     if (tg.HapticFeedback) {
       tg.HapticFeedback.impactOccurred(type);
@@ -515,7 +532,6 @@ function initTelegram() {
     }
   };
 
-  // BackButton
   if (tg.BackButton) {
     tg.BackButton.onClick(() => switchTab('studio'));
   }
@@ -523,8 +539,99 @@ function initTelegram() {
   console.log('✅ Telegram WebApp инициализирован');
 }
 
+// ========== FIREBASE ФУНКЦИИ ==========
+async function syncWithFirebase() {
+  if (!gameState.userId) return;
+  
+  try {
+    const playerRef = database.ref('players/' + gameState.userId);
+    const snapshot = await playerRef.once('value');
+    
+    if (snapshot.exists()) {
+      // Игрок существует - загружаем данные
+      const data = snapshot.val();
+      // Берём лучшие значения из Firebase и локальных
+      gameState.coins = Math.max(gameState.coins, data.coins || 0);
+      gameState.views = Math.max(gameState.views, data.views || 0);
+      gameState.hardware = { ...gameState.hardware, ...(data.hardware || {}) };
+      gameState.platformLevel = Math.max(gameState.platformLevel, data.platformLevel || 0);
+      gameState.stats.videosCreated = Math.max(gameState.stats.videosCreated, data.stats?.videosCreated || 0);
+      console.log('Данные загружены из Firebase');
+    } else {
+      // Новый игрок - создаём запись
+      await playerRef.set({
+        username: gameState.username,
+        coins: gameState.coins,
+        views: gameState.views,
+        hardware: gameState.hardware,
+        platformLevel: gameState.platformLevel,
+        stats: { videosCreated: gameState.stats.videosCreated },
+        lastOnline: Date.now()
+      });
+      console.log('Новый игрок создан в Firebase');
+    }
+    gameState.lastSync = Date.now();
+  } catch (error) {
+    console.error('Ошибка синхронизации:', error);
+  }
+}
+
+async function updatePlayerData() {
+  if (!gameState.userId || Date.now() - gameState.lastSync < 5000) return;
+  
+  try {
+    await database.ref('players/' + gameState.userId).update({
+      username: gameState.username,
+      coins: gameState.coins,
+      views: gameState.views,
+      hardware: gameState.hardware,
+      platformLevel: gameState.platformLevel,
+      stats: { videosCreated: gameState.stats.videosCreated },
+      lastOnline: Date.now()
+    });
+    gameState.lastSync = Date.now();
+  } catch (error) {
+    console.error('Ошибка обновления:', error);
+  }
+}
+
+function listenToLeaderboard() {
+  const leaderboardRef = database.ref('players');
+  
+  // Отписываемся от предыдущего слушателя если есть
+  if (leaderboardUnsubscribe) {
+    leaderboardUnsubscribe();
+  }
+  
+  leaderboardUnsubscribe = leaderboardRef.on('value', (snapshot) => {
+    const players = [];
+    snapshot.forEach((childSnapshot) => {
+      const data = childSnapshot.val();
+      players.push({
+        userId: childSnapshot.key,
+        username: data.username || 'Unknown',
+        views: data.views || 0,
+        coins: data.coins || 0,
+        lastOnline: data.lastOnline || 0
+      });
+    });
+    
+    // Сортируем по просмотрам (убывание)
+    players.sort((a, b) => b.views - a.views);
+    
+    // Находим место игрока
+    const myIndex = players.findIndex(p => p.userId === gameState.userId);
+    const myRank = myIndex === -1 ? players.length + 1 : myIndex + 1;
+    
+    renderLeaderboard(players.slice(0, 50), myRank); // Показываем топ-50
+    document.getElementById('playersCount').textContent = players.length + ' игроков';
+  });
+}
+
+// ========== GAME FUNCTIONS ==========
 function saveGame() {
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(gameState)); } catch (e) {}
+  updatePlayerData();
 }
 
 function loadGame() {
@@ -538,13 +645,6 @@ function loadGame() {
       gameState.stats = { ...gameState.stats, ...(parsed.stats || {}) };
     }
   } catch (e) {}
-}
-
-function resetGame() {
-  if (!tg?.showConfirm || confirm('Сбросить прогресс?')) {
-    localStorage.removeItem(SAVE_KEY);
-    location.reload();
-  }
 }
 
 function formatNumber(n) {
@@ -651,31 +751,34 @@ function renderRecentVideos() {
   }).join('');
 }
 
-function renderLeaderboard() {
+function renderLeaderboard(players, myRank) {
   const container = document.getElementById('leaderboardList');
   
-  // Сортируем фейковый топ + добавляем игрока
-  const allPlayers = [...FAKE_LEADERBOARD];
-  const playerRank = allPlayers.findIndex(p => p.views <= gameState.views);
-  const actualRank = playerRank === -1 ? allPlayers.length + 1 : playerRank + 1;
-  
   // Обновляем инфо о игроке
-  document.getElementById('myRank').textContent = '#' + Math.min(actualRank, 100);
+  document.getElementById('myRank').textContent = '#' + Math.min(myRank, 999);
   document.getElementById('myViews').textContent = formatNumber(gameState.views) + ' просмотров';
+  document.getElementById('myCoins').textContent = formatCoins(gameState.coins);
 
-  // Показываем топ-10
-  container.innerHTML = allPlayers.slice(0, 10).map((player, index) => {
+  if (!players || players.length === 0) {
+    container.innerHTML = '<div class="p-8 text-center text-tg-muted text-sm">Пока нет игроков. Будь первым!</div>';
+    return;
+  }
+
+  container.innerHTML = players.map((player, index) => {
     const rank = index + 1;
+    const isMe = player.userId === gameState.userId;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'bg-tg-bg/40';
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
     
     return `
-      <div class="flex items-center gap-3 p-3 ${rank <= 3 ? '' : ''}">
+      <div class="flex items-center gap-3 p-3 ${isMe ? 'bg-football-green/10 border-l-2 border-football-green' : ''}">
         <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm flex-shrink-0">
           ${medal}
         </div>
         <div class="flex-1 min-w-0">
-          <div class="font-bold text-sm truncate">${player.name}</div>
+          <div class="font-bold text-sm truncate ${isMe ? 'text-football-green' : ''}">
+            ${player.username} ${isMe ? '(ты)' : ''}
+          </div>
           <div class="text-[11px] text-tg-muted">${formatNumber(player.coins)} монет</div>
         </div>
         <div class="text-right">
@@ -942,7 +1045,7 @@ function switchTab(tabName) {
   if (window.haptic) window.haptic('light');
   
   if (tabName === 'shop') { renderHardware(); renderPlatforms(); }
-  else if (tabName === 'leaderboard') { renderLeaderboard(); }
+  else if (tabName === 'leaderboard') { /* Leaderboard обновляется автоматически */ }
   else if (tabName === 'tasks') { renderTasks(); }
   else if (tabName === 'studio') { renderRecentVideos(); }
 }
@@ -992,7 +1095,6 @@ function init() {
   document.getElementById('resultModal').addEventListener('click', (e) => {
     if (e.target.id === 'resultModal') closeResult();
   });
-  document.getElementById('resetBtn').addEventListener('click', resetGame);
 
   window.addEventListener('beforeunload', saveGame);
   document.addEventListener('visibilitychange', () => {
@@ -1003,7 +1105,18 @@ function init() {
   startPassiveIncome();
   startAutoSave();
 
-  console.log('%c⚽ Football Media Tycoon запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
+  // Синхронизация с Firebase
+  if (gameState.userId) {
+    syncWithFirebase().then(() => {
+      updateHeaderUI();
+      listenToLeaderboard();
+    });
+  } else {
+    // Если нет userId (запуск вне Telegram), показываем заглушку
+    renderLeaderboard([], 0);
+  }
+
+  console.log('%c Football Media Tycoon запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
 // Переинициализация иконок
@@ -1013,7 +1126,6 @@ const origRenderPlatforms = renderPlatforms;
 const origRenderTopics = renderTopics;
 const origRenderStyles = renderStyles;
 const origRenderRecent = renderRecentVideos;
-const origRenderLeaderboard = renderLeaderboard;
 
 function wrapWithIcons(fn) {
   return function(...args) {
@@ -1027,7 +1139,6 @@ renderPlatforms = wrapWithIcons(origRenderPlatforms);
 renderTopics = wrapWithIcons(origRenderTopics);
 renderStyles = wrapWithIcons(origRenderStyles);
 renderRecentVideos = wrapWithIcons(origRenderRecent);
-renderLeaderboard = wrapWithIcons(origRenderLeaderboard);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
