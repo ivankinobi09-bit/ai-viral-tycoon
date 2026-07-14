@@ -95,6 +95,8 @@ tailwind.config = {
   .developer-only { display: none; }
   .is-developer .developer-only { display: block; }
   .is-developer .developer-only-flex { display: flex; }
+  .contact-btn { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border: 1px solid #a855f7; transition: all 0.2s ease; }
+  .contact-btn:active { transform: scale(0.96); }
 </style>
 </head>
 
@@ -173,7 +175,7 @@ tailwind.config = {
       </div>
 
       <button id="playMatchBtn" class="btn-play press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 mb-3">
-        <i data-lucide="play" class="w-5 h-5"></i><span>Сыграть матч</span><span class="ml-1 text-xs opacity-80">(−50 ⚡)</span>
+        <i data-lucide="play" class="w-5 h-5"></i><span>Сыграть матч</span><span class="ml-1 text-xs opacity-80">(−50 )</span>
       </button>
 
       <div class="glass-card rounded-xl p-4 mb-4">
@@ -205,7 +207,6 @@ tailwind.config = {
         <div id="hardwareList" class="space-y-2"></div>
       </div>
 
-      <!-- НОВАЯ СЕКЦИЯ: СТАДИОНЫ -->
       <div class="mb-4">
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="building-2" class="w-4 h-4 text-football-blue"></i>Стадионы (пассивные фанаты)</h3>
         <div id="stadiumsList" class="space-y-2"></div>
@@ -281,13 +282,12 @@ tailwind.config = {
       </div>
     </section>
 
-    <!-- ВКЛАДКА: ТОП (ИСПРАВЛЕНО: призы 700₽, таймер 7 дней, юзернеймы только для разработчика) -->
     <section id="tab-leaderboard" class="tab-content tab-hidden px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2"><i data-lucide="trophy" class="w-5 h-5 text-football-gold"></i>Топ игроков</h2>
 
       <div class="glass-card rounded-xl p-4 mb-4 border border-football-gold/30">
         <div class="text-center mb-3">
-          <div class="text-xs text-tg-muted mb-1"> Призовой фонд сезона</div>
+          <div class="text-xs text-tg-muted mb-1">🏆 Призовой фонд сезона</div>
           <div class="text-lg font-bold text-football-gold">700 ₽ разыгрывается</div>
         </div>
         <div class="grid grid-cols-3 gap-2 mb-3">
@@ -307,6 +307,17 @@ tailwind.config = {
         <div class="countdown-timer rounded-lg p-2 text-center">
           <div class="text-[10px] text-tg-muted">До конца сезона:</div>
           <div id="seasonTimer" class="text-lg font-bold text-football-red tabular-nums">7д 00:00:00</div>
+        </div>
+      </div>
+
+      <!-- НОВАЯ КНОПКА: Связаться с разработчиком -->
+      <div class="glass-card rounded-xl p-4 mb-4 border border-football-purple/30">
+        <div class="text-center mb-2">
+          <div class="text-xs text-tg-muted mb-2">Ты в топ-3? Получи приз!</div>
+          <button id="contactDevBtn" class="contact-btn press-effect w-full py-3 rounded-lg text-football-purple font-bold text-sm flex items-center justify-center gap-2">
+            <i data-lucide="message-circle" class="w-4 h-4"></i>
+            <span>Связаться с разработчиком для получения приза</span>
+          </button>
         </div>
       </div>
 
@@ -470,11 +481,9 @@ tailwind.config = {
 </div>
 
 <script>
-// ========== ВАЖНО: ВСТАВЬ СЮДА СВОЙ TELEGRAM USER ID ==========
-// Узнать свой ID можно через бота @userinfobot в Telegram
-const DEVELOPER_USER_ID = '988679203'; // Например: '123456789'
+const DEVELOPER_USER_ID = '988679203';
+const DEVELOPER_USERNAME = 'hertyln'; // Твой юзернейм
 
-// FIREBASE
 const firebaseConfig = {
   apiKey: "AIzaSyCsrRWKQvYLZbcK_qrMc4fRskPzBw4H8fU",
   authDomain: "football-tycoon-222ef.firebaseapp.com",
@@ -494,7 +503,6 @@ try {
   firebaseReady = true;
 } catch (error) { console.error('Firebase error:', error); }
 
-// КОНФИГУРАЦИЯ
 const CONFIG = {
   matchCost: 50,
   baseMaxEnergy: 100,
@@ -506,7 +514,7 @@ const CONFIG = {
   offlineMaxHours: 8,
   buffDurationMs: 3600000,
   minigameCooldownMs: 300000,
-  seasonDurationMs: 7 * 24 * 60 * 60 * 1000 // 7 дней
+  seasonDurationMs: 7 * 24 * 60 * 60 * 1000
 };
 
 let seasonStartDate = null;
@@ -516,7 +524,6 @@ function getSeasonStart() {
     if (saved) {
       seasonStartDate = parseInt(saved);
     } else {
-      // ИСПРАВЛЕНО: начинаем с полного сезона (7 дней), а не с середины
       seasonStartDate = Date.now();
       localStorage.setItem('season_start', seasonStartDate.toString());
     }
@@ -538,7 +545,6 @@ function formatTimeLeft(ms) {
   return `${days}д ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// ЛИГИ
 const LEAGUES = [
   { id: 'street', name: 'Дворовая лига', fansRequired: 0, multiplier: 1.0, color: 'from-gray-500 to-gray-700' },
   { id: 'school', name: 'Школьная лига', fansRequired: 5000, multiplier: 1.5, color: 'from-football-green to-football-dark' },
@@ -574,14 +580,14 @@ const HARDWARE = [
   { id: 'agency', name: 'Агентство', icon: 'building', baseCost: 100000, income: 1000, color: 'from-football-purple to-purple-700' }
 ];
 
-// НОВАЯ СЕКЦИЯ: СТАДИОНЫ (пассивный доход фанатов)
+// ИЗМЕНЕНО: стадионы можно купить только один раз, увеличено количество и цены
 const STADIUMS = [
   { 
     id: 'local', 
     name: 'Локальный стадион', 
     icon: 'home',
     desc: 'Маленький стадион в твоём районе',
-    fansPerHour: 500, // ~0.14/сек
+    fansPerHour: 500,
     cost: 50000,
     color: 'from-gray-500 to-gray-700'
   },
@@ -590,7 +596,7 @@ const STADIUMS = [
     name: 'Открытие Арена', 
     icon: 'building',
     desc: 'Современный стадион в Москве',
-    fansPerHour: 1500, // ~0.42/сек
+    fansPerHour: 1500,
     cost: 200000,
     color: 'from-football-red to-red-700'
   },
@@ -599,22 +605,75 @@ const STADIUMS = [
     name: 'Лужники', 
     icon: 'building-2',
     desc: 'Легендарный стадион России',
-    fansPerHour: 3000, // ~0.83/сек
+    fansPerHour: 3000,
     cost: 1000000,
     color: 'from-football-blue to-blue-700'
   },
   { 
-    id: 'campnou', 
-    name: 'Камп Ноу', 
+    id: 'santiagobernabeu', 
+    name: 'Сантьяго Бернабеу', 
     icon: 'crown',
-    desc: 'Крупнейший стадион Европы',
-    fansPerHour: 5000, // ~1.39/сек (максимум)
+    desc: 'Дом мадридского Реала',
+    fansPerHour: 5000,
     cost: 5000000,
     color: 'from-football-gold to-yellow-600'
+  },
+  { 
+    id: 'oldtrafford', 
+    name: 'Олд Траффорд', 
+    icon: 'castle',
+    desc: 'Театр мечты Манчестер Юнайтед',
+    fansPerHour: 7500,
+    cost: 15000000,
+    color: 'from-football-red to-red-800'
+  },
+  { 
+    id: 'allianzarena', 
+    name: 'Альянц Арена', 
+    icon: 'star',
+    desc: 'Современная арена Баварии',
+    fansPerHour: 10000,
+    cost: 30000000,
+    color: 'from-football-blue to-blue-800'
+  },
+  { 
+    id: 'wembley', 
+    name: 'Уэмбли', 
+    icon: 'trophy',
+    desc: 'Национальный стадион Англии',
+    fansPerHour: 15000,
+    cost: 60000000,
+    color: 'from-football-purple to-purple-800'
+  },
+  { 
+    id: 'maracana', 
+    name: 'Маракана', 
+    icon: 'flame',
+    desc: 'Легендарный стадион Бразилии',
+    fansPerHour: 20000,
+    cost: 100000000,
+    color: 'from-football-green to-green-700'
+  },
+  { 
+    id: 'campnou', 
+    name: 'Камп Ноу', 
+    icon: 'gem',
+    desc: 'Крупнейший стадион Европы',
+    fansPerHour: 25000,
+    cost: 200000000,
+    color: 'from-football-gold to-orange-600'
+  },
+  { 
+    id: 'futuristic', 
+    name: 'Стадион Будущего', 
+    icon: 'zap',
+    desc: 'Футуристическая арена с голограммами',
+    fansPerHour: 50000,
+    cost: 500000000,
+    color: 'from-football-purple to-pink-600'
   }
 ];
 
-// ИНФРАСТРУКТУРА (ИСПРАВЛЕНО: описания на русском)
 const INFRASTRUCTURE = [
   { 
     id: 'stadium', 
@@ -704,12 +763,11 @@ const MATCH_COMMENTARIES = [
   'Контратака!', 'Финальный свисток!'
 ];
 
-// СОСТОЯНИЕ (ДОБАВЛЕНО: stadiums)
 let gameState = {
   coins: 100, fans: 0, totalFansEarned: 0, energy: CONFIG.baseMaxEnergy,
   characteristics: { stamina: 0, strength: 0, dribbling: 0, shotPower: 0, technique: 0, speed: 0 },
   hardware: { phone: 0, camera: 0, studio: 0, pro: 0, agency: 0 },
-  stadiums: { local: 0, otkritie: 0, luzhniki: 0, campnou: 0 }, // НОВОЕ
+  stadiums: { local: false, otkritie: false, luzhniki: false, santiagobernabeu: false, oldtrafford: false, allianzarena: false, wembley: false, maracana: false, campnou: false, futuristic: false },
   infrastructure: { stadium: 0, academy: 0, scouts: 0, sponsors: 0 },
   leagueLevel: 0, prestige: 0,
   completedAchievements: [],
@@ -721,22 +779,20 @@ let gameState = {
   username: 'Player', userId: null, lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v9';
+const SAVE_KEY = 'football_tycoon_save_v10';
 let tg = null;
 let leaderboardUnsubscribe = null;
 let passiveIncomeInterval = null;
-let fansIncomeInterval = null; // НОВОЕ: для пассивного дохода фанатов
+let fansIncomeInterval = null;
 let energyRegenInterval = null;
 let autoSaveInterval = null;
 let buffUpdateInterval = null;
 let seasonTimerInterval = null;
 
-// Проверка разработчика
 function isDeveloper() {
   return gameState.userId && gameState.userId === DEVELOPER_USER_ID;
 }
 
-// TELEGRAM
 function initTelegram() {
   tg = window.Telegram?.WebApp;
   if (!tg) return;
@@ -750,7 +806,6 @@ function initTelegram() {
     gameState.userId = user.id.toString();
   }
   
-  // Добавляем класс разработчика к body если нужно
   if (isDeveloper()) {
     document.body.classList.add('is-developer');
   }
@@ -760,7 +815,6 @@ function initTelegram() {
   if (tg.BackButton) tg.BackButton.onClick(() => switchTab('match'));
 }
 
-// FIREBASE (ИСПРАВЛЕНО: более надежная синхронизация)
 async function syncWithFirebase() {
   if (!gameState.userId || !firebaseReady) return;
   try {
@@ -769,7 +823,6 @@ async function syncWithFirebase() {
     
     if (snapshot.exists()) {
       const data = snapshot.val();
-      // ИСПРАВЛЕНО: берём максимум из локального и Firebase для каждого поля
       gameState.coins = Math.max(gameState.coins || 0, data.coins || 0);
       gameState.fans = Math.max(gameState.fans || 0, data.fans || 0);
       gameState.totalFansEarned = Math.max(gameState.totalFansEarned || 0, data.totalFansEarned || 0);
@@ -785,10 +838,9 @@ async function syncWithFirebase() {
           gameState.hardware[key] = Math.max(gameState.hardware[key] || 0, data.hardware[key] || 0);
         }
       }
-      // НОВОЕ: синхронизация стадионов
       if (data.stadiums) {
         for (let key in gameState.stadiums) {
-          gameState.stadiums[key] = Math.max(gameState.stadiums[key] || 0, data.stadiums[key] || 0);
+          gameState.stadiums[key] = data.stadiums[key] || false;
         }
       }
       if (data.infrastructure) {
@@ -811,7 +863,6 @@ async function syncWithFirebase() {
       
       console.log('✅ Данные загружены из Firebase');
     } else {
-      // Новый игрок — создаём запись
       await playerRef.set({
         username: gameState.username,
         coins: gameState.coins,
@@ -911,7 +962,6 @@ function renderLocalLeaderboard() {
   localStorage.setItem('local_leaderboard', JSON.stringify(localPlayers.slice(0, 50)));
 }
 
-// GAME
 function saveGame() { 
   gameState.lastSaveTime = Date.now(); 
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(gameState)); } catch (e) {} 
@@ -926,7 +976,7 @@ function loadGame() {
       gameState = { ...gameState, ...parsed };
       gameState.characteristics = { ...gameState.characteristics, ...(parsed.characteristics || {}) };
       gameState.hardware = { ...gameState.hardware, ...(parsed.hardware || {}) };
-      gameState.stadiums = { ...gameState.stadiums, ...(parsed.stadiums || {}) }; // НОВОЕ
+      gameState.stadiums = { ...gameState.stadiums, ...(parsed.stadiums || {}) };
       gameState.infrastructure = { ...gameState.infrastructure, ...(parsed.infrastructure || {}) };
       gameState.completedAchievements = parsed.completedAchievements || [];
       gameState.activeBuffs = parsed.activeBuffs || {};
@@ -981,12 +1031,12 @@ function getAcademyBonus() {
   return INFRASTRUCTURE.find(i => i.id === 'academy').levels[level - 1].bonus;
 }
 
-// НОВОЕ: расчёт пассивного дохода фанатов от стадионов
 function getFansPerSecond() {
   let total = 0;
   STADIUMS.forEach(s => {
-    const owned = gameState.stadiums[s.id] || 0;
-    total += (s.fansPerHour / 3600) * owned; // фанатов в секунду
+    if (gameState.stadiums[s.id]) {
+      total += s.fansPerHour / 3600;
+    }
   });
   return total;
 }
@@ -1046,7 +1096,6 @@ function updateHeaderUI() {
   }
   
   document.getElementById('passiveIncomeDisplay').textContent = formatCoins(getPassiveIncome()) + '/сек';
-  // НОВОЕ: отображение фанатов в час
   document.getElementById('fansPerHourDisplay').textContent = formatNumber(getFansPerHour()) + '/ч';
   
   document.getElementById('playMatchBtn').disabled = gameState.energy < CONFIG.matchCost;
@@ -1085,24 +1134,21 @@ function startEnergyRegen() {
   }, CONFIG.energyRegenMs);
 }
 
-// НОВОЕ: пассивный доход фанатов от стадионов
 function startFansIncome() {
   if (fansIncomeInterval) clearInterval(fansIncomeInterval);
   fansIncomeInterval = setInterval(() => {
     const fansPerSec = getFansPerSecond();
     if (fansPerSec > 0) {
-      // Начисляем фанатов каждую секунду
       gameState.fans += fansPerSec;
       gameState.totalFansEarned += fansPerSec;
       updateHeaderUI();
     }
-  }, 1000); // каждую секунду
+  }, 1000);
 }
 
 function canClaimDailyReward() { const now = Date.now(); const lastClaim = gameState.lastDailyReward || 0; return (now - lastClaim) >= 24 * 60 * 60 * 1000; }
 function getDailyRewardAmount(day) { const rewards = [100, 250, 500, 1000, 2000, 5000, 10000]; return rewards[(day - 1) % 7]; }
 
-// РЕНДЕРИНГ
 function renderCharacteristics() {
   const container = document.getElementById('characteristicsList');
   const totalSkill = getTotalSkill();
@@ -1134,12 +1180,11 @@ function renderRecentMatches() {
   container.innerHTML = gameState.stats.recentMatches.slice(0, 5).map(m => {
     const resultClass = m.result === 'win' ? 'result-win' : m.result === 'draw' ? 'result-draw' : 'result-lose';
     const resultText = m.result === 'win' ? 'Победа' : m.result === 'draw' ? 'Ничья' : 'Поражение';
-    const resultIcon = m.result === 'win' ? '🏆' : m.result === 'draw' ? '🤝' : '';
+    const resultIcon = m.result === 'win' ? '🏆' : m.result === 'draw' ? '' : '';
     return `<div class="flex items-center justify-between p-2 ${resultClass} rounded-lg border"><div class="flex items-center gap-2"><span class="text-base">${resultIcon}</span><span class="text-xs font-bold">${resultText}</span></div><div class="flex items-center gap-3 text-[11px]"><span class="text-football-blue flex items-center gap-0.5"><i data-lucide="users" class="w-3 h-3"></i>+${formatNumber(m.fans)}</span><span class="text-football-gold flex items-center gap-0.5"><i data-lucide="coins" class="w-3 h-3"></i>+${formatNumber(m.coins)}</span></div></div>`;
   }).join('');
 }
 
-// ИСПРАВЛЕНО: юзернеймы видны только разработчику, призы 300+250+150=700
 function renderLeaderboard(players, myRank) {
   const container = document.getElementById('leaderboardList');
   document.getElementById('myRank').textContent = '#' + Math.min(myRank, 999);
@@ -1158,10 +1203,9 @@ function renderLeaderboard(players, myRank) {
     const rank = index + 1;
     const isMe = player.userId === gameState.userId;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'bg-tg-bg/40';
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '' : rank === 3 ? '' : `#${rank}`;
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
     const prize = prizes[rank] || '';
     
-    // Юзернейм показываем только разработчику
     const usernameDisplay = developerMode 
       ? `${player.username} (ID: ${player.userId})` 
       : (isMe ? `${player.username} (ты)` : `Игрок #${rank}`);
@@ -1216,29 +1260,31 @@ function renderHardware() {
   container.querySelectorAll('.buy-hw-btn').forEach(btn => { btn.addEventListener('click', () => buyHardware(btn.dataset.hw)); });
 }
 
-// НОВОЕ: рендер стадионов
+// ИЗМЕНЕНО: стадионы можно купить только один раз
 function renderStadiums() {
   const container = document.getElementById('stadiumsList');
   container.innerHTML = STADIUMS.map(stadium => {
-    const owned = gameState.stadiums[stadium.id] || 0;
+    const owned = gameState.stadiums[stadium.id] || false;
     const canAfford = gameState.coins >= stadium.cost;
-    const fansPerHourTotal = stadium.fansPerHour * (owned + 1);
+    const isDisabled = owned || !canAfford;
+    
     return `<div class="glass-card rounded-xl p-3 flex items-center gap-3">
       <div class="w-11 h-11 rounded-lg bg-gradient-to-br ${stadium.color} flex items-center justify-center flex-shrink-0">
         <i data-lucide="${stadium.icon}" class="w-5 h-5 text-white"></i>
       </div>
       <div class="flex-1 min-w-0">
-        <div class="flex items-center gap-2">
-          <span class="font-bold text-sm">${stadium.name}</span>
-          ${owned > 0 ? `<span class="text-[10px] bg-football-blue/20 text-football-blue px-1.5 py-0.5 rounded">×${owned}</span>` : ''}
-        </div>
+        <div class="font-bold text-sm">${stadium.name}</div>
         <div class="text-[11px] text-tg-muted">${stadium.desc}</div>
         <div class="text-[10px] text-football-blue mt-0.5">+${formatNumber(stadium.fansPerHour)} фанатов/час</div>
       </div>
-      <button data-stadium="${stadium.id}" class="buy-stadium-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${canAfford ? 'bg-football-blue/20 text-football-blue border border-football-blue/40 hover:bg-football-blue/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>${formatCoins(stadium.cost)}</button>
+      ${owned 
+        ? '<span class="text-[10px] text-football-green px-2 py-1.5 font-bold">✓ Куплено</span>'
+        : `<button data-stadium="${stadium.id}" class="buy-stadium-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${canAfford ? 'bg-football-blue/20 text-football-blue border border-football-blue/40 hover:bg-football-blue/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>${formatCoins(stadium.cost)}</button>`
+      }
     </div>`;
   }).join('');
-  container.querySelectorAll('.buy-stadium-btn').forEach(btn => {
+  
+  container.querySelectorAll('.buy-stadium-btn:not([disabled])').forEach(btn => {
     btn.addEventListener('click', () => buyStadium(btn.dataset.stadium));
   });
 }
@@ -1258,7 +1304,6 @@ function renderPlatforms() {
   }).join('');
 }
 
-// ИСПРАВЛЕНО: описания инфраструктуры на русском
 function renderInfrastructure() {
   const container = document.getElementById('infrastructureList');
   container.innerHTML = INFRASTRUCTURE.map(infra => {
@@ -1300,7 +1345,6 @@ function renderAchievements() {
   }).join('');
 }
 
-// ДЕЙСТВИЯ
 function buySkill(skillId) {
   const skill = CHARACTERISTICS.find(s => s.id === skillId);
   if (!skill) return;
@@ -1332,13 +1376,17 @@ function buyHardware(hwId) {
   if (window.haptic) window.haptic('light');
 }
 
-// НОВОЕ: покупка стадиона
+// ИЗМЕНЕНО: стадион можно купить только один раз
 function buyStadium(stadiumId) {
   const stadium = STADIUMS.find(s => s.id === stadiumId);
   if (!stadium) return;
+  if (gameState.stadiums[stadiumId]) {
+    alert('Этот стадион уже куплен!');
+    return;
+  }
   if (gameState.coins < stadium.cost) return;
   gameState.coins -= stadium.cost;
-  gameState.stadiums[stadiumId] = (gameState.stadiums[stadiumId] || 0) + 1;
+  gameState.stadiums[stadiumId] = true;
   saveGame();
   renderStadiums();
   updateHeaderUI();
@@ -1499,7 +1547,7 @@ function checkAchievements() {
     updateHeaderUI();
     if (newlyUnlocked.length === 1) {
       const ach = newlyUnlocked[0];
-      showFloatingNumber(document.body, ` ${ach.name}!`);
+      showFloatingNumber(document.body, `🏆 ${ach.name}!`);
     }
   }
 }
@@ -1624,7 +1672,7 @@ function claimDailyReward() {
   checkAchievements();
   document.getElementById('dailyModal').classList.add('hidden');
   document.getElementById('dailyModal').classList.remove('flex');
-  showFloatingNumber(document.body, `+${formatCoins(reward)} 🎁`);
+  showFloatingNumber(document.body, `+${formatCoins(reward)} `);
   if (window.hapticSuccess) window.hapticSuccess();
   if (gameState.dailyStreak % 7 === 0) setTimeout(() => alert('🎉 Недельная серия завершена! Бонус получен!'), 500);
 }
@@ -1661,7 +1709,6 @@ function claimOfflineProgress() {
   if (window.hapticSuccess) window.hapticSuccess();
 }
 
-// МИНИ-ИГРЫ
 function canPlayMinigame() {
   const now = Date.now();
   const lastPlay = gameState.lastMinigameTime || 0;
@@ -1973,7 +2020,7 @@ function init() {
   renderRecentMatches();
   renderSkills();
   renderHardware();
-  renderStadiums(); // НОВОЕ
+  renderStadiums();
   renderPlatforms();
   renderInfrastructure();
   renderPrestige();
@@ -1996,12 +2043,21 @@ function init() {
   document.getElementById('closeDribblingBtn').addEventListener('click', () => { document.getElementById('dribblingModal').classList.add('hidden'); document.getElementById('dribblingModal').classList.remove('flex'); });
   document.getElementById('closeGoalkeeperBtn').addEventListener('click', () => { document.getElementById('goalkeeperModal').classList.add('hidden'); document.getElementById('goalkeeperModal').classList.remove('flex'); });
   
+  // НОВАЯ КНОПКА: Связаться с разработчиком
+  document.getElementById('contactDevBtn').addEventListener('click', () => {
+    if (tg && tg.openTelegramLink) {
+      tg.openTelegramLink(`https://t.me/${DEVELOPER_USERNAME}`);
+    } else {
+      window.open(`https://t.me/${DEVELOPER_USERNAME}`, '_blank');
+    }
+  });
+  
   window.addEventListener('beforeunload', saveGame);
   document.addEventListener('visibilitychange', () => { if (document.hidden) saveGame(); });
   
   startEnergyRegen();
   startPassiveIncome();
-  startFansIncome(); // НОВОЕ: пассивный доход фанатов
+  startFansIncome();
   startAutoSave();
   startBuffUpdate();
   startSeasonTimer();
@@ -2026,9 +2082,7 @@ function init() {
     renderLocalLeaderboard();
   }
   
-  console.log('%c⚽ Football Tycoon v9 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
-  console.log('%cТвой Telegram ID: ' + (gameState.userId || 'неизвестно'), 'color: #fbbf24; font-size: 14px;');
-  console.log('%cВставь его в константу DEVELOPER_USER_ID в начале кода', 'color: #fbbf24; font-size: 12px;');
+  console.log('%c⚽ Football Tycoon v10 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
 const origRenderCharacteristics = renderCharacteristics;
