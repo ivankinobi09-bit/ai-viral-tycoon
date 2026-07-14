@@ -3,17 +3,16 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>AI Viral Tycoon</title>
+<title>Football Media Tycoon</title>
 
 <!-- Telegram WebApp SDK -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-<!-- Tailwind CSS через CDN -->
+<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 <!-- Lucide Icons -->
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
-<!-- Кастомная конфигурация Tailwind -->
 <script>
   tailwind.config = {
     theme: {
@@ -24,21 +23,20 @@
           'tg-border': '#30363d',
           'tg-text': '#e6edf3',
           'tg-muted': '#8b949e',
-          'neon-purple': '#a855f7',
-          'neon-blue': '#3b82f6',
-          'neon-green': '#10b981',
-          'neon-yellow': '#fbbf24',
-          'neon-pink': '#ec4899'
+          'football-green': '#10b981',
+          'football-dark': '#059669',
+          'football-gold': '#fbbf24',
+          'football-blue': '#3b82f6',
+          'football-red': '#ef4444'
         },
         fontFamily: {
           sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
         },
         animation: {
-          'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
           'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           'fade-in': 'fadeIn 0.3s ease-out',
           'float-up': 'floatUp 1.5s ease-out forwards',
-          'shake': 'shake 0.4s ease-in-out'
+          'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
         },
         keyframes: {
           slideUp: {
@@ -52,11 +50,6 @@
           floatUp: {
             '0%': { transform: 'translateY(0)', opacity: '1' },
             '100%': { transform: 'translateY(-60px)', opacity: '0' }
-          },
-          shake: {
-            '0%, 100%': { transform: 'translateX(0)' },
-            '25%': { transform: 'translateX(-4px)' },
-            '75%': { transform: 'translateX(4px)' }
           }
         }
       }
@@ -71,11 +64,12 @@
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
     user-select: none;
+    -webkit-user-select: none;
   }
   body {
     background:
-      radial-gradient(ellipse at top, rgba(168, 85, 247, 0.15), transparent 50%),
-      radial-gradient(ellipse at bottom, rgba(59, 130, 246, 0.1), transparent 50%),
+      radial-gradient(ellipse at top, rgba(16, 185, 129, 0.15), transparent 50%),
+      radial-gradient(ellipse at bottom, rgba(251, 191, 36, 0.1), transparent 50%),
       #0d1117;
     min-height: 100vh;
   }
@@ -102,15 +96,15 @@
     opacity: 1;
     transform: translateY(0);
   }
-  .glow-purple { box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); }
-  .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
   .glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+  .glow-gold { box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
+  .glow-blue { box-shadow: 0 0 20px rgba(59, 130, 246, 0.4); }
   .btn-publish {
-    background: linear-gradient(135deg, #a855f7 0%, #3b82f6 100%);
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     transition: all 0.2s ease;
   }
   .btn-publish:hover:not(:disabled) {
-    box-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+    box-shadow: 0 0 30px rgba(16, 185, 129, 0.6);
     transform: translateY(-1px);
   }
   .btn-publish:disabled {
@@ -136,10 +130,11 @@
     color: #fbbf24;
     text-shadow: 0 0 10px rgba(251, 191, 36, 0.6);
     animation: floatUp 1.5s ease-out forwards;
+    z-index: 100;
   }
   .spinner {
-    border: 3px solid rgba(168, 85, 247, 0.2);
-    border-top-color: #a855f7;
+    border: 3px solid rgba(16, 185, 129, 0.2);
+    border-top-color: #10b981;
     border-radius: 50%;
     width: 48px;
     height: 48px;
@@ -149,7 +144,7 @@
     to { transform: rotate(360deg); }
   }
   .nav-item-active {
-    color: #a855f7;
+    color: #10b981;
   }
   .nav-item-active::before {
     content: '';
@@ -159,9 +154,12 @@
     transform: translateX(-50%);
     width: 32px;
     height: 3px;
-    background: linear-gradient(90deg, #a855f7, #3b82f6);
+    background: linear-gradient(90deg, #10b981, #fbbf24);
     border-radius: 2px;
   }
+  .rank-1 { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); color: #000; }
+  .rank-2 { background: linear-gradient(135deg, #9ca3af 0%, #6b7280 100%); color: #000; }
+  .rank-3 { background: linear-gradient(135deg, #b45309 0%, #92400e 100%); color: #fff; }
 </style>
 </head>
 
@@ -169,18 +167,18 @@
 
 <div class="mx-auto max-w-[480px] min-h-screen flex flex-col relative overflow-hidden">
 
-  <!-- ШАПКА: РЕСУРСЫ -->
+  <!-- ШАПКА -->
   <header class="sticky top-0 z-20 glass-card border-b border-tg-border px-4 py-3">
     <div class="flex items-center justify-between mb-2">
       <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center">
-          <i data-lucide="sparkles" class="w-4 h-4 text-white"></i>
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-football-green to-football-blue flex items-center justify-center">
+          <i data-lucide="trophy" class="w-4 h-4 text-white"></i>
         </div>
-        <h1 class="text-sm font-bold bg-gradient-to-r from-neon-purple to-neon-blue bg-clip-text text-transparent">
-          AI Viral Tycoon
+        <h1 class="text-sm font-bold bg-gradient-to-r from-football-green to-football-gold bg-clip-text text-transparent">
+          Football Media Tycoon
         </h1>
       </div>
-      <button id="resetBtn" class="text-tg-muted hover:text-white text-xs press-effect p-1" title="Сбросить прогресс">
+      <button id="resetBtn" class="text-tg-muted hover:text-white text-xs press-effect p-1">
         <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
       </button>
     </div>
@@ -188,25 +186,25 @@
     <div class="grid grid-cols-3 gap-2">
       <div class="bg-tg-bg/60 rounded-lg px-2 py-1.5 border border-tg-border">
         <div class="flex items-center gap-1 text-[10px] text-tg-muted uppercase tracking-wider">
-          <i data-lucide="coins" class="w-3 h-3 text-neon-yellow"></i>
+          <i data-lucide="coins" class="w-3 h-3 text-football-gold"></i>
           <span>Монеты</span>
         </div>
-        <div id="coinsDisplay" class="text-sm font-bold text-neon-yellow tabular-nums">$0</div>
+        <div id="coinsDisplay" class="text-sm font-bold text-football-gold tabular-nums">$0</div>
       </div>
       <div class="bg-tg-bg/60 rounded-lg px-2 py-1.5 border border-tg-border">
         <div class="flex items-center gap-1 text-[10px] text-tg-muted uppercase tracking-wider">
-          <i data-lucide="eye" class="w-3 h-3 text-neon-blue"></i>
+          <i data-lucide="eye" class="w-3 h-3 text-football-blue"></i>
           <span>Просмотры</span>
         </div>
-        <div id="viewsDisplay" class="text-sm font-bold text-neon-blue tabular-nums">0</div>
+        <div id="viewsDisplay" class="text-sm font-bold text-football-blue tabular-nums">0</div>
       </div>
       <div class="bg-tg-bg/60 rounded-lg px-2 py-1.5 border border-tg-border">
         <div class="flex items-center justify-between text-[10px] text-tg-muted uppercase tracking-wider">
           <div class="flex items-center gap-1">
-            <i data-lucide="battery" class="w-3 h-3 text-neon-green"></i>
+            <i data-lucide="battery" class="w-3 h-3 text-football-green"></i>
             <span>Энергия</span>
           </div>
-          <span id="energyText" class="text-neon-green font-bold tabular-nums">100/100</span>
+          <span id="energyText" class="text-football-green font-bold tabular-nums">100/100</span>
         </div>
         <div class="mt-1 h-1 bg-tg-border rounded-full overflow-hidden">
           <div id="energyBar" class="energy-bar h-full" style="width: 100%"></div>
@@ -216,10 +214,10 @@
 
     <div class="mt-2 flex items-center justify-between text-[11px] text-tg-muted">
       <div class="flex items-center gap-1">
-        <i data-lucide="trending-up" class="w-3 h-3 text-neon-green"></i>
+        <i data-lucide="trending-up" class="w-3 h-3 text-football-green"></i>
         <span>Пассивный доход:</span>
       </div>
-      <span id="passiveIncomeDisplay" class="text-neon-green font-bold tabular-nums">$0/сек</span>
+      <span id="passiveIncomeDisplay" class="text-football-green font-bold tabular-nums">$0/сек</span>
     </div>
   </header>
 
@@ -229,36 +227,36 @@
     <!-- ВКЛАДКА: СТУДИЯ -->
     <section id="tab-studio" class="tab-content tab-visible px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-        <i data-lucide="video" class="w-5 h-5 text-neon-purple"></i>
-        Студия создания видео
+        <i data-lucide="video" class="w-5 h-5 text-football-green"></i>
+        Футбольная студия
       </h2>
 
       <div class="glass-card rounded-xl p-4 mb-3">
-        <label class="text-xs text-tg-muted uppercase tracking-wider mb-2 block">Тема видео</label>
+        <label class="text-xs text-tg-muted uppercase tracking-wider mb-2 block">Тип контента</label>
         <div id="topicsList" class="grid grid-cols-1 gap-2"></div>
       </div>
 
       <div class="glass-card rounded-xl p-4 mb-4">
-        <label class="text-xs text-tg-muted uppercase tracking-wider mb-2 block">Стиль видео</label>
+        <label class="text-xs text-tg-muted uppercase tracking-wider mb-2 block">Формат</label>
         <div id="stylesList" class="grid grid-cols-2 gap-2"></div>
       </div>
 
-      <button id="publishBtn" class="btn-publish press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 relative overflow-hidden">
+      <button id="publishBtn" class="btn-publish press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2">
         <i data-lucide="send" class="w-5 h-5"></i>
-        <span>Опубликовать видео</span>
-        <span class="ml-1 text-xs opacity-80">(−20 🔋)</span>
+        <span>Опубликовать</span>
+        <span class="ml-1 text-xs opacity-80">(−20 ⚡)</span>
       </button>
 
       <div class="mt-4 glass-card rounded-xl p-4">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-bold flex items-center gap-2">
-            <i data-lucide="activity" class="w-4 h-4 text-neon-blue"></i>
-            Последние видео
+            <i data-lucide="activity" class="w-4 h-4 text-football-blue"></i>
+            Последние публикации
           </h3>
           <span id="videosCount" class="text-xs text-tg-muted">0 создано</span>
         </div>
         <div id="recentVideos" class="space-y-2 text-xs text-tg-muted">
-          <div class="text-center py-4 opacity-60">Пока нет видео. Создайте первое!</div>
+          <div class="text-center py-4 opacity-60">Пока нет публикаций. Создай первую!</div>
         </div>
       </div>
     </section>
@@ -266,31 +264,56 @@
     <!-- ВКЛАДКА: МАГАЗИН -->
     <section id="tab-shop" class="tab-content tab-hidden px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-        <i data-lucide="shopping-bag" class="w-5 h-5 text-neon-yellow"></i>
-        Магазин апгрейдов
+        <i data-lucide="shopping-bag" class="w-5 h-5 text-football-gold"></i>
+        Магазин улучшений
       </h2>
 
       <div class="mb-4">
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2">
-          <i data-lucide="cpu" class="w-4 h-4 text-neon-green"></i>
-          Железо · пассивный доход
+          <i data-lucide="cpu" class="w-4 h-4 text-football-green"></i>
+          Оборудование
         </h3>
         <div id="hardwareList" class="space-y-2"></div>
       </div>
 
       <div>
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2">
-          <i data-lucide="brain" class="w-4 h-4 text-neon-purple"></i>
-          Нейросети · множитель просмотров
+          <i data-lucide="star" class="w-4 h-4 text-football-gold"></i>
+          Платформы
         </h3>
         <div id="neuralList" class="space-y-2"></div>
+      </div>
+    </section>
+
+    <!-- ВКЛАДКА: ТОП -->
+    <section id="tab-leaderboard" class="tab-content tab-hidden px-4 py-4">
+      <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
+        <i data-lucide="trophy" class="w-5 h-5 text-football-gold"></i>
+        Топ футбольных медиа
+      </h2>
+
+      <div class="glass-card rounded-xl p-4 mb-4">
+        <div class="text-center mb-4">
+          <div class="text-xs text-tg-muted mb-1">Твоё место</div>
+          <div id="myRank" class="text-3xl font-bold text-football-green">#--</div>
+          <div id="myViews" class="text-sm text-tg-muted mt-1">0 просмотров</div>
+        </div>
+      </div>
+
+      <div class="glass-card rounded-xl overflow-hidden">
+        <div class="p-3 bg-tg-bg/60 border-b border-tg-border">
+          <div class="text-xs text-tg-muted uppercase tracking-wider">Глобальный рейтинг</div>
+        </div>
+        <div id="leaderboardList" class="divide-y divide-tg-border">
+          <!-- Генерируется JS -->
+        </div>
       </div>
     </section>
 
     <!-- ВКЛАДКА: ЗАДАНИЯ -->
     <section id="tab-tasks" class="tab-content tab-hidden px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-        <i data-lucide="target" class="w-5 h-5 text-neon-pink"></i>
+        <i data-lucide="target" class="w-5 h-5 text-football-red"></i>
         Задания
       </h2>
       <div id="tasksList" class="space-y-3"></div>
@@ -300,43 +323,47 @@
 
   <!-- НИЖНЯЯ НАВИГАЦИЯ -->
   <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] glass-card border-t border-tg-border z-30">
-    <div class="grid grid-cols-3">
+    <div class="grid grid-cols-4">
       <button data-tab="studio" class="nav-item nav-item-active press-effect relative py-3 flex flex-col items-center gap-1 transition-colors">
         <i data-lucide="video" class="w-5 h-5"></i>
-        <span class="text-[11px] font-medium">Студия</span>
+        <span class="text-[10px] font-medium">Студия</span>
       </button>
       <button data-tab="shop" class="nav-item press-effect relative py-3 flex flex-col items-center gap-1 text-tg-muted transition-colors">
         <i data-lucide="shopping-bag" class="w-5 h-5"></i>
-        <span class="text-[11px] font-medium">Магазин</span>
+        <span class="text-[10px] font-medium">Магазин</span>
+      </button>
+      <button data-tab="leaderboard" class="nav-item press-effect relative py-3 flex flex-col items-center gap-1 text-tg-muted transition-colors">
+        <i data-lucide="trophy" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Топ</span>
       </button>
       <button data-tab="tasks" class="nav-item press-effect relative py-3 flex flex-col items-center gap-1 text-tg-muted transition-colors">
         <i data-lucide="target" class="w-5 h-5"></i>
-        <span class="text-[11px] font-medium">Задания</span>
+        <span class="text-[10px] font-medium">Задания</span>
       </button>
     </div>
   </nav>
 
   <!-- МОДАЛКА: РЕЗУЛЬТАТ -->
   <div id="resultModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-slide-up border border-neon-purple/30">
+    <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-slide-up border border-football-green/30">
       <div class="flex justify-center mb-4">
-        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-neon-purple to-neon-blue flex items-center justify-center glow-purple">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-football-green to-football-gold flex items-center justify-center glow-green">
           <i data-lucide="trending-up" class="w-8 h-8 text-white"></i>
         </div>
       </div>
-      <h3 class="text-center text-lg font-bold mb-2">Видео опубликовано!</h3>
+      <h3 class="text-center text-lg font-bold mb-2">Гол! </h3>
       <p id="resultText" class="text-center text-sm text-tg-text mb-4 leading-relaxed"></p>
       <div id="resultStats" class="grid grid-cols-2 gap-2 mb-4">
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
           <div class="text-[10px] text-tg-muted uppercase">Просмотры</div>
-          <div id="resultViews" class="text-lg font-bold text-neon-blue tabular-nums">0</div>
+          <div id="resultViews" class="text-lg font-bold text-football-blue tabular-nums">0</div>
         </div>
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
           <div class="text-[10px] text-tg-muted uppercase">Монеты</div>
-          <div id="resultCoins" class="text-lg font-bold text-neon-yellow tabular-nums">$0</div>
+          <div id="resultCoins" class="text-lg font-bold text-football-gold tabular-nums">$0</div>
         </div>
       </div>
-      <button id="closeResultBtn" class="btn-publish press-effect w-full py-3 rounded-xl text-white font-bold">Отлично!</button>
+      <button id="closeResultBtn" class="btn-publish press-effect w-full py-3 rounded-xl text-white font-bold">Круто!</button>
     </div>
   </div>
 
@@ -344,8 +371,8 @@
   <div id="generatingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-8 text-center animate-fade-in">
       <div class="spinner mx-auto mb-4"></div>
-      <h3 class="text-base font-bold mb-1">Генерация видео...</h3>
-      <p class="text-xs text-tg-muted">ИИ создаёт шедевр для вас</p>
+      <h3 class="text-base font-bold mb-1">Монтаж видео...</h3>
+      <p class="text-xs text-tg-muted">Готовим футбольный контент</p>
     </div>
   </div>
 
@@ -354,18 +381,20 @@
 <!-- ИГРОВАЯ ЛОГИКА -->
 <script>
 /* =========================================================
-   AI VIRAL TYCOON — ИГРОВАЯ ЛОГИКА
+   FOOTBALL MEDIA TYCOON
+   Оптимизировано для Telegram Mini Apps
    ========================================================= */
 
 const CONFIG = {
   topics: [
-    { id: 'space', name: 'Тайны космоса', icon: 'rocket', color: 'neon-blue' },
-    { id: 'football', name: 'Футбольные драмы', icon: 'trophy', color: 'neon-green' },
-    { id: 'ai', name: 'Секреты ИИ', icon: 'brain', color: 'neon-purple' }
+    { id: 'match', name: 'Обзор матча', icon: 'flag', color: 'football-blue' },
+    { id: 'transfer', name: 'Трансферные новости', icon: 'refresh-cw', color: 'football-green' },
+    { id: 'scandal', name: 'Скандалы и слухи', icon: 'alert-circle', color: 'football-red' },
+    { id: 'stats', name: 'Статистика игроков', icon: 'bar-chart-2', color: 'football-gold' }
   ],
   styles: [
-    { id: 'voice', name: 'Озвучка ИИ', icon: 'mic' },
-    { id: 'images', name: 'Генерация картинок', icon: 'image' }
+    { id: 'shorts', name: 'Shorts/Reels', icon: 'smartphone' },
+    { id: 'long', name: 'Длинное видео', icon: 'video' }
   ],
   baseViews: { min: 5000, max: 50000 },
   baseCoins: { min: 50, max: 500 },
@@ -378,57 +407,124 @@ const CONFIG = {
 };
 
 const HARDWARE = [
-  { id: 'gtx1660',  name: 'GTX 1660',    icon: 'monitor', baseCost: 100,   income: 1,   color: 'from-gray-500 to-gray-700' },
-  { id: 'rtx3060',  name: 'RTX 3060',    icon: 'monitor', baseCost: 500,   income: 5,   color: 'from-green-500 to-green-700' },
-  { id: 'rtx4090',  name: 'RTX 4090',    icon: 'monitor', baseCost: 2500,  income: 25,  color: 'from-neon-green to-emerald-700' },
-  { id: 'h100',     name: 'NVIDIA H100', icon: 'server',  baseCost: 15000, income: 150, color: 'from-neon-purple to-neon-blue' }
+  { id: 'phone', name: 'Смартфон', icon: 'smartphone', baseCost: 100, income: 1, color: 'from-gray-500 to-gray-700' },
+  { id: 'camera', name: 'Камера 4K', icon: 'video', baseCost: 500, income: 5, color: 'from-football-green to-football-dark' },
+  { id: 'studio', name: 'Домашняя студия', icon: 'monitor', baseCost: 2500, income: 25, color: 'from-football-blue to-blue-700' },
+  { id: 'pro', name: 'Профессиональная студия', icon: 'tv', baseCost: 15000, income: 150, color: 'from-football-gold to-yellow-600' }
 ];
 
-const NEURAL = [
-  { id: 'chatgpt_free', name: 'ChatGPT Free',   icon: 'message-circle', cost: 0,     multiplier: 1.0,  desc: 'Базовый уровень' },
-  { id: 'chatgpt_plus', name: 'ChatGPT Plus',   icon: 'message-circle', cost: 1000,  multiplier: 1.5,  desc: '×1.5 к просмотрам' },
-  { id: 'claude_pro',   name: 'Claude Pro',     icon: 'sparkles',       cost: 5000,  multiplier: 2.25, desc: '×2.25 к просмотрам' },
-  { id: 'midjourney',   name: 'Midjourney API', icon: 'image',          cost: 25000, multiplier: 3.5,  desc: '×3.5 к просмотрам' }
+const PLATFORMS = [
+  { id: 'telegram', name: 'Telegram', icon: 'send', cost: 0, multiplier: 1.0, desc: 'Базовый уровень' },
+  { id: 'youtube', name: 'YouTube', icon: 'youtube', cost: 1000, multiplier: 1.5, desc: '×1.5 к просмотрам' },
+  { id: 'tiktok', name: 'TikTok', icon: 'music', cost: 5000, multiplier: 2.25, desc: '×2.25 к просмотрам' },
+  { id: 'all', name: 'Все платформы', icon: 'globe', cost: 25000, multiplier: 3.5, desc: '×3.5 к просмотрам' }
 ];
 
 const TASKS = [
   {
     id: 'subscribe',
-    title: 'Подписаться на Telegram-канал разработчика',
+    title: 'Подписаться на футбольный канал',
     desc: 'Поддержите автора проекта',
     reward: 500,
     icon: 'send',
-    color: 'neon-blue',
+    color: 'football-blue',
     type: 'instant'
   },
   {
     id: 'ad',
-    title: 'Посмотреть ИИ-рекламу',
-    desc: '5 секунд вашего времени = 1000 монет',
+    title: 'Посмотреть рекламу',
+    desc: '5 секунд = 1000 монет',
     reward: 1000,
     icon: 'tv',
-    color: 'neon-pink',
+    color: 'football-red',
     type: 'timer',
     duration: 5
   }
+];
+
+// Фейковые данные для топа (для демонстрации)
+const FAKE_LEADERBOARD = [
+  { name: 'FootballKing', views: 15420000, coins: 245000 },
+  { name: 'GoalMaster', views: 12350000, coins: 198000 },
+  { name: 'SoccerPro', views: 9870000, coins: 156000 },
+  { name: 'ChampionTV', views: 8540000, coins: 134000 },
+  { name: 'BallExpert', views: 7230000, coins: 112000 },
+  { name: 'MatchDay', views: 6120000, coins: 95000 },
+  { name: 'GoalZone', views: 5340000, coins: 82000 },
+  { name: 'FootyFan', views: 4560000, coins: 71000 },
+  { name: 'SportNews', views: 3890000, coins: 61000 },
+  { name: 'GameTime', views: 3120000, coins: 52000 }
 ];
 
 let gameState = {
   coins: 100,
   views: 0,
   energy: CONFIG.maxEnergy,
-  selectedTopic: 'space',
-  selectedStyle: 'voice',
-  hardware: { gtx1660: 0, rtx3060: 0, rtx4090: 0, h100: 0 },
-  neuralLevel: 0,
+  selectedTopic: 'match',
+  selectedStyle: 'shorts',
+  hardware: { phone: 0, camera: 0, studio: 0, pro: 0 },
+  platformLevel: 0,
   completedTasks: { subscribe: false, ad: false },
-  stats: { videosCreated: 0, recentVideos: [] }
+  stats: { videosCreated: 0, recentVideos: [] },
+  username: 'Player'
 };
 
-const SAVE_KEY = 'ai_viral_tycoon_save_v1';
+const SAVE_KEY = 'football_tycoon_save_v1';
+
+// Telegram WebApp
+let tg = null;
+
+function initTelegram() {
+  tg = window.Telegram?.WebApp;
+  if (!tg) {
+    console.log('Запуск вне Telegram');
+    return;
+  }
+
+  tg.ready();
+  tg.expand();
+
+  // Применяем тему Telegram
+  const params = tg.themeParams || {};
+  document.documentElement.style.setProperty('--tg-theme-bg-color', params.bg_color || '#0d1117');
+  document.documentElement.style.setProperty('--tg-theme-text-color', params.text_color || '#e6edf3');
+  document.documentElement.style.setProperty('--tg-theme-button-color', params.button_color || '#10b981');
+  document.documentElement.style.setProperty('--tg-theme-button-text-color', params.button_text_color || '#ffffff');
+
+  // Получаем данные пользователя
+  const user = tg.initDataUnsafe?.user;
+  if (user) {
+    gameState.username = user.first_name || 'Player';
+    console.log('Игрок:', gameState.username);
+  }
+
+  // Haptic Feedback
+  window.haptic = (type = 'light') => {
+    if (tg.HapticFeedback) {
+      tg.HapticFeedback.impactOccurred(type);
+    } else if (navigator.vibrate) {
+      navigator.vibrate(20);
+    }
+  };
+
+  window.hapticSuccess = () => {
+    if (tg.HapticFeedback) {
+      tg.HapticFeedback.notificationOccurred('success');
+    } else if (navigator.vibrate) {
+      navigator.vibrate([30, 50, 30]);
+    }
+  };
+
+  // BackButton
+  if (tg.BackButton) {
+    tg.BackButton.onClick(() => switchTab('studio'));
+  }
+
+  console.log('✅ Telegram WebApp инициализирован');
+}
 
 function saveGame() {
-  try { localStorage.setItem(SAVE_KEY, JSON.stringify(gameState)); } catch (e) { console.warn('Save error:', e); }
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(gameState)); } catch (e) {}
 }
 
 function loadGame() {
@@ -441,20 +537,21 @@ function loadGame() {
       gameState.completedTasks = { ...gameState.completedTasks, ...(parsed.completedTasks || {}) };
       gameState.stats = { ...gameState.stats, ...(parsed.stats || {}) };
     }
-  } catch (e) { console.warn('Load error:', e); }
+  } catch (e) {}
 }
 
 function resetGame() {
-  if (!confirm('Точно сбросить весь прогресс?')) return;
-  localStorage.removeItem(SAVE_KEY);
-  location.reload();
+  if (!tg?.showConfirm || confirm('Сбросить прогресс?')) {
+    localStorage.removeItem(SAVE_KEY);
+    location.reload();
+  }
 }
 
 function formatNumber(n) {
   n = Math.floor(n);
-  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B';
-  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
-  if (n >= 10_000) return (n / 1_000).toFixed(1) + 'K';
+  if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K';
   return n.toLocaleString('ru-RU');
 }
 
@@ -466,26 +563,7 @@ function getPassiveIncome() {
   HARDWARE.forEach(h => { total += h.income * (gameState.hardware[h.id] || 0); });
   return total;
 }
-function getNeuralMultiplier() { return NEURAL[gameState.neuralLevel].multiplier; }
-
-// Универсальная функция вибрации (Telegram Haptic или обычная)
-function haptic(type = 'light') {
-  const tg = window.Telegram?.WebApp;
-  if (tg && tg.HapticFeedback) {
-    tg.HapticFeedback.impactOccurred(type);
-  } else if (navigator.vibrate) {
-    navigator.vibrate(20);
-  }
-}
-
-function hapticSuccess() {
-  const tg = window.Telegram?.WebApp;
-  if (tg && tg.HapticFeedback) {
-    tg.HapticFeedback.notificationOccurred('success');
-  } else if (navigator.vibrate) {
-    navigator.vibrate([30, 50, 30]);
-  }
-}
+function getMultiplier() { return PLATFORMS[gameState.platformLevel].multiplier; }
 
 function updateHeaderUI() {
   document.getElementById('coinsDisplay').textContent = formatCoins(gameState.coins);
@@ -493,34 +571,33 @@ function updateHeaderUI() {
   document.getElementById('energyText').textContent = `${Math.floor(gameState.energy)}/${CONFIG.maxEnergy}`;
   document.getElementById('energyBar').style.width = (gameState.energy / CONFIG.maxEnergy * 100) + '%';
   document.getElementById('passiveIncomeDisplay').textContent = formatCoins(getPassiveIncome()) + '/сек';
-  const publishBtn = document.getElementById('publishBtn');
-  publishBtn.disabled = gameState.energy < CONFIG.energyCost;
+  document.getElementById('publishBtn').disabled = gameState.energy < CONFIG.energyCost;
 }
 
 function renderTopics() {
   const container = document.getElementById('topicsList');
   container.innerHTML = CONFIG.topics.map(topic => {
     const selected = gameState.selectedTopic === topic.id;
+    const colorClass = topic.color === 'football-blue' ? 'from-football-blue to-blue-700' :
+                       topic.color === 'football-green' ? 'from-football-green to-football-dark' :
+                       topic.color === 'football-red' ? 'from-football-red to-red-700' :
+                       'from-football-gold to-yellow-600';
     return `
       <button data-topic="${topic.id}" class="topic-btn press-effect flex items-center gap-3 p-3 rounded-lg border transition-all ${
-        selected ? 'border-neon-purple bg-neon-purple/10 glow-purple' : 'border-tg-border bg-tg-bg/40 hover:border-tg-muted'
+        selected ? 'border-football-green bg-football-green/10 glow-green' : 'border-tg-border bg-tg-bg/40 hover:border-tg-muted'
       }">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-br ${
-          topic.color === 'neon-blue' ? 'from-neon-blue to-blue-700' :
-          topic.color === 'neon-green' ? 'from-neon-green to-emerald-700' :
-          'from-neon-purple to-purple-700'
-        } flex items-center justify-center">
+        <div class="w-9 h-9 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center">
           <i data-lucide="${topic.icon}" class="w-4 h-4 text-white"></i>
         </div>
         <span class="font-medium text-sm flex-1 text-left">${topic.name}</span>
-        ${selected ? '<i data-lucide="check-circle-2" class="w-5 h-5 text-neon-purple"></i>' : ''}
+        ${selected ? '<i data-lucide="check-circle-2" class="w-5 h-5 text-football-green"></i>' : ''}
       </button>
     `;
   }).join('');
   container.querySelectorAll('.topic-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       gameState.selectedTopic = btn.dataset.topic;
-      haptic('light');
+      if (window.haptic) window.haptic('light');
       renderTopics();
       saveGame();
     });
@@ -533,9 +610,9 @@ function renderStyles() {
     const selected = gameState.selectedStyle === style.id;
     return `
       <button data-style="${style.id}" class="style-btn press-effect flex items-center gap-2 p-3 rounded-lg border transition-all ${
-        selected ? 'border-neon-blue bg-neon-blue/10 glow-blue' : 'border-tg-border bg-tg-bg/40 hover:border-tg-muted'
+        selected ? 'border-football-green bg-football-green/10 glow-green' : 'border-tg-border bg-tg-bg/40 hover:border-tg-muted'
       }">
-        <i data-lucide="${style.icon}" class="w-4 h-4 ${selected ? 'text-neon-blue' : 'text-tg-muted'}"></i>
+        <i data-lucide="${style.icon}" class="w-4 h-4 ${selected ? 'text-football-green' : 'text-tg-muted'}"></i>
         <span class="font-medium text-xs flex-1 text-left">${style.name}</span>
       </button>
     `;
@@ -543,7 +620,7 @@ function renderStyles() {
   container.querySelectorAll('.style-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       gameState.selectedStyle = btn.dataset.style;
-      haptic('light');
+      if (window.haptic) window.haptic('light');
       renderStyles();
       saveGame();
     });
@@ -554,7 +631,7 @@ function renderRecentVideos() {
   const container = document.getElementById('recentVideos');
   document.getElementById('videosCount').textContent = gameState.stats.videosCreated + ' создано';
   if (!gameState.stats.recentVideos.length) {
-    container.innerHTML = '<div class="text-center py-4 opacity-60">Пока нет видео. Создайте первое!</div>';
+    container.innerHTML = '<div class="text-center py-4 opacity-60">Пока нет публикаций. Создай первую!</div>';
     return;
   }
   container.innerHTML = gameState.stats.recentVideos.slice(0, 5).map(v => {
@@ -566,8 +643,44 @@ function renderRecentVideos() {
           <span class="text-xs truncate">${topic?.name || 'Видео'}</span>
         </div>
         <div class="flex items-center gap-3 text-[11px] flex-shrink-0">
-          <span class="text-neon-blue flex items-center gap-0.5"><i data-lucide="eye" class="w-3 h-3"></i>${formatNumber(v.views)}</span>
-          <span class="text-neon-yellow flex items-center gap-0.5"><i data-lucide="coins" class="w-3 h-3"></i>${formatNumber(v.coins)}</span>
+          <span class="text-football-blue flex items-center gap-0.5"><i data-lucide="eye" class="w-3 h-3"></i>${formatNumber(v.views)}</span>
+          <span class="text-football-gold flex items-center gap-0.5"><i data-lucide="coins" class="w-3 h-3"></i>${formatNumber(v.coins)}</span>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderLeaderboard() {
+  const container = document.getElementById('leaderboardList');
+  
+  // Сортируем фейковый топ + добавляем игрока
+  const allPlayers = [...FAKE_LEADERBOARD];
+  const playerRank = allPlayers.findIndex(p => p.views <= gameState.views);
+  const actualRank = playerRank === -1 ? allPlayers.length + 1 : playerRank + 1;
+  
+  // Обновляем инфо о игроке
+  document.getElementById('myRank').textContent = '#' + Math.min(actualRank, 100);
+  document.getElementById('myViews').textContent = formatNumber(gameState.views) + ' просмотров';
+
+  // Показываем топ-10
+  container.innerHTML = allPlayers.slice(0, 10).map((player, index) => {
+    const rank = index + 1;
+    const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'bg-tg-bg/40';
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+    
+    return `
+      <div class="flex items-center gap-3 p-3 ${rank <= 3 ? '' : ''}">
+        <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm flex-shrink-0">
+          ${medal}
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-sm truncate">${player.name}</div>
+          <div class="text-[11px] text-tg-muted">${formatNumber(player.coins)} монет</div>
+        </div>
+        <div class="text-right">
+          <div class="text-sm font-bold text-football-blue tabular-nums">${formatNumber(player.views)}</div>
+          <div class="text-[10px] text-tg-muted">просмотров</div>
         </div>
       </div>
     `;
@@ -588,12 +701,12 @@ function renderHardware() {
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
             <span class="font-bold text-sm">${hw.name}</span>
-            ${owned > 0 ? `<span class="text-[10px] bg-neon-green/20 text-neon-green px-1.5 py-0.5 rounded">×${owned}</span>` : ''}
+            ${owned > 0 ? `<span class="text-[10px] bg-football-green/20 text-football-green px-1.5 py-0.5 rounded">×${owned}</span>` : ''}
           </div>
-          <div class="text-[11px] text-tg-muted">+${hw.income} $/сек за штуку</div>
+          <div class="text-[11px] text-tg-muted">+${hw.income} $/сек</div>
         </div>
         <button data-hw="${hw.id}" class="buy-hw-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-          canAfford ? 'bg-neon-green/20 text-neon-green border border-neon-green/40 hover:bg-neon-green/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'
+          canAfford ? 'bg-football-green/20 text-football-green border border-football-green/40 hover:bg-football-green/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'
         }" ${canAfford ? '' : 'disabled'}>${formatCoins(cost)}</button>
       </div>
     `;
@@ -603,44 +716,45 @@ function renderHardware() {
   });
 }
 
-function renderNeural() {
+function renderPlatforms() {
   const container = document.getElementById('neuralList');
-  container.innerHTML = NEURAL.map((n, idx) => {
-    const isCurrent = gameState.neuralLevel === idx;
-    const isLocked = idx > gameState.neuralLevel;
-    const isPast = idx < gameState.neuralLevel;
-    const canAfford = gameState.coins >= n.cost;
-    const isNext = idx === gameState.neuralLevel + 1;
+  container.innerHTML = PLATFORMS.map((p, idx) => {
+    const isCurrent = gameState.platformLevel === idx;
+    const isPast = idx < gameState.platformLevel;
+    const isNext = idx === gameState.platformLevel + 1;
+    const canAfford = gameState.coins >= p.cost;
+    
     let btnHtml = '';
     if (isCurrent) {
-      btnHtml = `<span class="text-[11px] bg-neon-purple/20 text-neon-purple px-2 py-1.5 rounded-lg font-bold">АКТИВНО</span>`;
+      btnHtml = `<span class="text-[11px] bg-football-green/20 text-football-green px-2 py-1.5 rounded-lg font-bold">АКТИВНО</span>`;
     } else if (isPast) {
       btnHtml = `<span class="text-[11px] text-tg-muted px-2 py-1.5">Куплено</span>`;
     } else if (isNext) {
-      btnHtml = `<button data-neural="${idx}" class="buy-neural-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${
-        canAfford ? 'bg-neon-purple/20 text-neon-purple border border-neon-purple/40 hover:bg-neon-purple/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'
-      }" ${canAfford ? '' : 'disabled'}>${n.cost === 0 ? 'Бесплатно' : formatCoins(n.cost)}</button>`;
+      btnHtml = `<button data-platform="${idx}" class="buy-platform-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+        canAfford ? 'bg-football-gold/20 text-football-gold border border-football-gold/40 hover:bg-football-gold/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'
+      }" ${canAfford ? '' : 'disabled'}>${p.cost === 0 ? 'Бесплатно' : formatCoins(p.cost)}</button>`;
     } else {
-      btnHtml = `<span class="text-[11px] text-tg-muted px-2 py-1.5">🔒 ${formatCoins(n.cost)}</span>`;
+      btnHtml = `<span class="text-[11px] text-tg-muted px-2 py-1.5"> ${formatCoins(p.cost)}</span>`;
     }
+    
     return `
-      <div class="glass-card rounded-xl p-3 flex items-center gap-3 ${isCurrent ? 'border-neon-purple/50' : ''}">
+      <div class="glass-card rounded-xl p-3 flex items-center gap-3 ${isCurrent ? 'border-football-green/50' : ''}">
         <div class="w-11 h-11 rounded-lg ${
-          isCurrent ? 'bg-gradient-to-br from-neon-purple to-neon-blue' :
+          isCurrent ? 'bg-gradient-to-br from-football-green to-football-gold' :
           isPast ? 'bg-gradient-to-br from-gray-600 to-gray-800' : 'bg-tg-border/40'
         } flex items-center justify-center flex-shrink-0">
-          <i data-lucide="${n.icon}" class="w-5 h-5 ${isCurrent || isPast ? 'text-white' : 'text-tg-muted'}"></i>
+          <i data-lucide="${p.icon}" class="w-5 h-5 ${isCurrent || isPast ? 'text-white' : 'text-tg-muted'}"></i>
         </div>
         <div class="flex-1 min-w-0">
-          <div class="font-bold text-sm">${n.name}</div>
-          <div class="text-[11px] ${isCurrent ? 'text-neon-purple' : 'text-tg-muted'}">${n.desc}</div>
+          <div class="font-bold text-sm">${p.name}</div>
+          <div class="text-[11px] ${isCurrent ? 'text-football-green' : 'text-tg-muted'}">${p.desc}</div>
         </div>
         ${btnHtml}
       </div>
     `;
   }).join('');
-  container.querySelectorAll('.buy-neural-btn').forEach(btn => {
-    btn.addEventListener('click', () => buyNeural(parseInt(btn.dataset.neural)));
+  container.querySelectorAll('.buy-platform-btn').forEach(btn => {
+    btn.addEventListener('click', () => buyPlatform(parseInt(btn.dataset.platform)));
   });
 }
 
@@ -652,7 +766,7 @@ function renderTasks() {
       <div class="glass-card rounded-xl p-4 ${completed ? 'opacity-60' : ''}">
         <div class="flex items-start gap-3">
           <div class="w-11 h-11 rounded-lg ${
-            task.color === 'neon-blue' ? 'bg-gradient-to-br from-neon-blue to-blue-700' : 'bg-gradient-to-br from-neon-pink to-pink-700'
+            task.color === 'football-blue' ? 'bg-gradient-to-br from-football-blue to-blue-700' : 'bg-gradient-to-br from-football-red to-red-700'
           } flex items-center justify-center flex-shrink-0">
             <i data-lucide="${task.icon}" class="w-5 h-5 text-white"></i>
           </div>
@@ -660,12 +774,12 @@ function renderTasks() {
             <div class="font-bold text-sm mb-0.5">${task.title}</div>
             <div class="text-[11px] text-tg-muted mb-2">${task.desc}</div>
             <div class="flex items-center justify-between">
-              <span class="text-xs text-neon-yellow font-bold flex items-center gap-1">
+              <span class="text-xs text-football-gold font-bold flex items-center gap-1">
                 <i data-lucide="coins" class="w-3 h-3"></i>+${formatNumber(task.reward)}
               </span>
               ${completed
-                ? '<span class="text-[11px] text-neon-green flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i>Выполнено</span>'
-                : `<button data-task="${task.id}" class="task-btn press-effect px-3 py-1.5 rounded-lg text-xs font-bold bg-neon-pink/20 text-neon-pink border border-neon-pink/40 hover:bg-neon-pink/30">${task.type === 'timer' ? 'Смотреть' : 'Выполнить'}</button>`
+                ? '<span class="text-[11px] text-football-green flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i>Выполнено</span>'
+                : `<button data-task="${task.id}" class="task-btn press-effect px-3 py-1.5 rounded-lg text-xs font-bold bg-football-red/20 text-football-red border border-football-red/40 hover:bg-football-red/30">${task.type === 'timer' ? 'Смотреть' : 'Выполнить'}</button>`
               }
             </div>
           </div>
@@ -689,26 +803,26 @@ function buyHardware(hwId) {
   saveGame();
   renderHardware();
   updateHeaderUI();
-  haptic('light');
+  if (window.haptic) window.haptic('light');
 }
 
-function buyNeural(level) {
-  const neural = NEURAL[level];
-  if (!neural || level !== gameState.neuralLevel + 1) return;
-  if (gameState.coins < neural.cost) return;
-  gameState.coins -= neural.cost;
-  gameState.neuralLevel = level;
+function buyPlatform(level) {
+  const platform = PLATFORMS[level];
+  if (!platform || level !== gameState.platformLevel + 1) return;
+  if (gameState.coins < platform.cost) return;
+  gameState.coins -= platform.cost;
+  gameState.platformLevel = level;
   saveGame();
-  renderNeural();
+  renderPlatforms();
   updateHeaderUI();
-  haptic('light');
+  if (window.haptic) window.haptic('light');
 }
 
 async function createVideo() {
   if (gameState.energy < CONFIG.energyCost) return;
   gameState.energy -= CONFIG.energyCost;
   updateHeaderUI();
-  haptic('medium');
+  if (window.haptic) window.haptic('medium');
 
   const genModal = document.getElementById('generatingModal');
   genModal.classList.remove('hidden');
@@ -719,7 +833,7 @@ async function createVideo() {
   genModal.classList.add('hidden');
   genModal.classList.remove('flex');
 
-  const multiplier = getNeuralMultiplier();
+  const multiplier = getMultiplier();
   const views = Math.floor(randInt(CONFIG.baseViews.min, CONFIG.baseViews.max) * multiplier);
   const coins = Math.floor(randInt(CONFIG.baseCoins.min, CONFIG.baseCoins.max) * multiplier);
 
@@ -738,12 +852,12 @@ async function createVideo() {
   updateHeaderUI();
   renderRecentVideos();
   showResult(views, coins);
-  hapticSuccess();
+  if (window.hapticSuccess) window.hapticSuccess();
 }
 
 function showResult(views, coins) {
   const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
-  document.getElementById('resultText').innerHTML = `Ваше видео на тему <b class="text-neon-purple">${topic.name}</b> стало хитом!`;
+  document.getElementById('resultText').innerHTML = `Твой контент на тему <b class="text-football-green">${topic.name}</b> набрал популярность!`;
   document.getElementById('resultViews').textContent = formatNumber(views);
   document.getElementById('resultCoins').textContent = formatCoins(coins);
   const modal = document.getElementById('resultModal');
@@ -768,7 +882,7 @@ function startTask(taskId, btnEl) {
     updateHeaderUI();
     renderTasks();
     showFloatingNumber(btnEl, '+' + formatNumber(task.reward));
-    hapticSuccess();
+    if (window.hapticSuccess) window.hapticSuccess();
   } else if (task.type === 'timer') {
     let remaining = task.duration;
     btnEl.disabled = true;
@@ -782,7 +896,7 @@ function startTask(taskId, btnEl) {
         updateHeaderUI();
         renderTasks();
         showFloatingNumber(btnEl, '+' + formatNumber(task.reward));
-        hapticSuccess();
+        if (window.hapticSuccess) window.hapticSuccess();
         return;
       }
       remaining--;
@@ -800,7 +914,6 @@ function showFloatingNumber(anchorEl, text) {
   floater.style.left = (rect.left + rect.width / 2) + 'px';
   floater.style.top = rect.top + 'px';
   floater.style.position = 'fixed';
-  floater.style.zIndex = '100';
   document.body.appendChild(floater);
   setTimeout(() => floater.remove(), 1500);
 }
@@ -815,6 +928,7 @@ function switchTab(tabName) {
     target.classList.remove('tab-hidden');
     target.classList.add('tab-visible');
   }, 30);
+  
   document.querySelectorAll('.nav-item').forEach(btn => {
     if (btn.dataset.tab === tabName) {
       btn.classList.add('nav-item-active');
@@ -824,8 +938,11 @@ function switchTab(tabName) {
       btn.classList.add('text-tg-muted');
     }
   });
-  haptic('light');
-  if (tabName === 'shop') { renderHardware(); renderNeural(); }
+  
+  if (window.haptic) window.haptic('light');
+  
+  if (tabName === 'shop') { renderHardware(); renderPlatforms(); }
+  else if (tabName === 'leaderboard') { renderLeaderboard(); }
   else if (tabName === 'tasks') { renderTasks(); }
   else if (tabName === 'studio') { renderRecentVideos(); }
 }
@@ -853,55 +970,15 @@ function startAutoSave() {
   setInterval(saveGame, CONFIG.autoSaveMs);
 }
 
-// ===== ИНИЦИАЛИЗАЦИЯ TELEGRAM WEBAPP =====
-function initTelegramWebApp() {
-  const tg = window.Telegram?.WebApp;
-  if (!tg) {
-    console.log('Telegram WebApp не обнаружен (запуск в обычном браузере)');
-    return;
-  }
-
-  // Сообщаем Telegram что приложение готово
-  tg.ready();
-  // Разворачиваем на весь экран
-  tg.expand();
-
-  // Применяем цвета темы Telegram
-  const bgColor = tg.themeParams?.bg_color || '#0d1117';
-  const textColor = tg.themeParams?.text_color || '#e6edf3';
-  const buttonColor = tg.themeParams?.button_color || '#a855f7';
-  const buttonTextColor = tg.themeParams?.button_text_color || '#ffffff';
-
-  document.documentElement.style.setProperty('--tg-theme-bg-color', bgColor);
-  document.documentElement.style.setProperty('--tg-theme-text-color', textColor);
-  document.documentElement.style.setProperty('--tg-theme-button-color', buttonColor);
-  document.documentElement.style.setProperty('--tg-theme-button-text-color', buttonTextColor);
-
-  // Получаем данные пользователя
-  const user = tg.initDataUnsafe?.user;
-  if (user) {
-    console.log('Игрок:', user.first_name, user.username || '');
-  }
-
-  // Показываем BackButton для навигации
-  if (tg.BackButton) {
-    tg.BackButton.onClick(() => {
-      switchTab('studio');
-    });
-  }
-
-  console.log('✅ Telegram WebApp инициализирован!');
-}
-
 function init() {
+  initTelegram();
   loadGame();
-  initTelegramWebApp();
 
   renderTopics();
   renderStyles();
   renderRecentVideos();
   renderHardware();
-  renderNeural();
+  renderPlatforms();
   renderTasks();
   updateHeaderUI();
 
@@ -926,16 +1003,17 @@ function init() {
   startPassiveIncome();
   startAutoSave();
 
-  console.log('%c AI Viral Tycoon запущен!', 'color: #a855f7; font-size: 16px; font-weight: bold');
+  console.log('%c⚽ Football Media Tycoon запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
-// Переинициализация иконок после рендера
+// Переинициализация иконок
 const origRenderTasks = renderTasks;
 const origRenderHardware = renderHardware;
-const origRenderNeural = renderNeural;
+const origRenderPlatforms = renderPlatforms;
 const origRenderTopics = renderTopics;
 const origRenderStyles = renderStyles;
 const origRenderRecent = renderRecentVideos;
+const origRenderLeaderboard = renderLeaderboard;
 
 function wrapWithIcons(fn) {
   return function(...args) {
@@ -945,10 +1023,11 @@ function wrapWithIcons(fn) {
 }
 renderTasks = wrapWithIcons(origRenderTasks);
 renderHardware = wrapWithIcons(origRenderHardware);
-renderNeural = wrapWithIcons(origRenderNeural);
+renderPlatforms = wrapWithIcons(origRenderPlatforms);
 renderTopics = wrapWithIcons(origRenderTopics);
 renderStyles = wrapWithIcons(origRenderStyles);
 renderRecentVideos = wrapWithIcons(origRenderRecent);
+renderLeaderboard = wrapWithIcons(origRenderLeaderboard);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
