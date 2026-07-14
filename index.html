@@ -40,14 +40,12 @@
           'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           'fade-in': 'fadeIn 0.3s ease-out',
           'float-up': 'floatUp 1.5s ease-out forwards',
-          'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-          'count-up': 'countUp 2s ease-out'
+          'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
         },
         keyframes: {
           slideUp: { '0%': { transform: 'translateY(30px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
           fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-          floatUp: { '0%': { transform: 'translateY(0)', opacity: '1' }, '100%': { transform: 'translateY(-60px)', opacity: '0' } },
-          countUp: { '0%': { transform: 'scale(1)' }, '50%': { transform: 'scale(1.2)' }, '100%': { transform: 'scale(1)' } }
+          floatUp: { '0%': { transform: 'translateY(0)', opacity: '1' }, '100%': { transform: 'translateY(-60px)', opacity: '0' } }
         }
       }
     }
@@ -164,7 +162,7 @@
       <div class="glass-card rounded-xl p-3 mb-4 bg-football-green/5 border border-football-green/20">
         <div class="flex items-center justify-between text-xs">
           <span class="text-tg-muted">Стоимость:</span>
-          <span id="energyCostDisplay" class="text-football-green font-bold">20 </span>
+          <span id="energyCostDisplay" class="text-football-green font-bold">20 ⚡</span>
         </div>
         <div class="flex items-center justify-between text-xs mt-1">
           <span class="text-tg-muted">Шанс вирусности:</span>
@@ -278,7 +276,7 @@
     </div>
   </nav>
 
-  <!-- МОДАЛКА: РЕЗУЛЬТАТ С АНИМАЦИЕЙ -->
+  <!-- МОДАЛКА: РЕЗУЛЬТАТ -->
   <div id="resultModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-slide-up border border-football-green/30">
       <div class="flex justify-center mb-4">
@@ -292,7 +290,7 @@
       <div id="resultStats" class="grid grid-cols-2 gap-2 mb-4">
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
           <div class="text-[10px] text-tg-muted uppercase">Просмотры</div>
-          <div id="resultViews" class="text-2xl font-bold text-football-blue tabular-nums animate-count-up">0</div>
+          <div id="resultViews" class="text-2xl font-bold text-football-blue tabular-nums">0</div>
           <div id="viewsGrowth" class="text-[10px] text-football-green mt-1">+0/сек</div>
         </div>
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
@@ -336,7 +334,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const database = firebase.database();
 
-// ========== КОНФИГУРАЦИЯ С РАЗНОЙ СТОИМОСТЬЮ ==========
+// ========== КОНФИГУРАЦИЯ ИГРЫ ==========
 const CONFIG = {
   topics: [
     { id: 'match', name: 'Обзор матча', icon: 'flag', color: 'football-blue', baseCost: 20, viralChance: 0.15 },
@@ -394,7 +392,7 @@ let gameState = {
 const SAVE_KEY = 'football_tycoon_save_v3';
 let tg = null;
 let leaderboardUnsubscribe = null;
-let currentViewsGrowth = 0;
+let viewsGrowthInterval = null; // Переменная для хранения интервала анимации
 
 // ========== TELEGRAM INIT ==========
 function initTelegram() {
@@ -539,56 +537,28 @@ function getViralChance() {
   const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
   const style = CONFIG.styles.find(s => s.id === gameState.selectedStyle);
   if (!topic || !style) return 0.1;
-  // Длинные видео имеют больший шанс на вирусность
   const styleBonus = style.id === 'long' ? 1.5 : 1.0;
-  return Math.min(topic.viralChance * styleBonus, 0.5); // Макс 50%
+  return Math.min(topic.viralChance * styleBonus, 0.5);
 }
 
 function calculateViewsAndCoins() {
-  const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
   const style = CONFIG.styles.find(s => s.id === gameState.selectedStyle);
   const multiplier = getMultiplier();
-  const energyCost = getCurrentEnergyCost();
-  const viralChance = getViralChance();
-  
-  // Базовые значения
   let baseViews = randInt(CONFIG.baseViews.min, CONFIG.baseViews.max);
   let baseCoins = randInt(CONFIG.baseCoins.min, CONFIG.baseCoins.max);
-  
-  // Множитель от формата
   baseViews *= style.viewMultiplier;
   baseCoins *= style.viewMultiplier;
-  
-  // Шанс на вирусный успех (зависит от затраченной энергии)
+  const viralChance = getViralChance();
   const roll = Math.random();
   let viralMultiplier = 1;
   let isViral = false;
   let isSuperViral = false;
-  
-  if (roll < viralChance * 0.2) {
-    // Супер вирусный (20% от вирусного шанса)
-    viralMultiplier = randInt(15, 50);
-    isSuperViral = true;
-  } else if (roll < viralChance) {
-    // Вирусный
-    viralMultiplier = randInt(5, 15);
-    isViral = true;
-  } else if (roll < viralChance * 2) {
-    // Хороший результат
-    viralMultiplier = randInt(2, 5);
-  }
-  
-  // Применяем множители
+  if (roll < viralChance * 0.2) { viralMultiplier = randInt(15, 50); isSuperViral = true; }
+  else if (roll < viralChance) { viralMultiplier = randInt(5, 15); isViral = true; }
+  else if (roll < viralChance * 2) { viralMultiplier = randInt(2, 5); }
   const finalViews = Math.floor(baseViews * viralMultiplier * multiplier);
   const finalCoins = Math.floor(baseCoins * viralMultiplier * multiplier);
-  
-  return {
-    views: finalViews,
-    coins: finalCoins,
-    isViral: isViral || isSuperViral,
-    isSuperViral: isSuperViral,
-    viralMultiplier: viralMultiplier
-  };
+  return { views: finalViews, coins: finalCoins, isViral: isViral || isSuperViral, isSuperViral: isSuperViral, viralMultiplier: viralMultiplier };
 }
 
 function updateHeaderUI() {
@@ -597,11 +567,9 @@ function updateHeaderUI() {
   document.getElementById('energyText').textContent = `${Math.floor(gameState.energy)}/${CONFIG.maxEnergy}`;
   document.getElementById('energyBar').style.width = (gameState.energy / CONFIG.maxEnergy * 100) + '%';
   document.getElementById('passiveIncomeDisplay').textContent = formatCoins(getPassiveIncome()) + '/сек';
-  
   const cost = getCurrentEnergyCost();
   document.getElementById('publishBtn').disabled = gameState.energy < cost;
   document.getElementById('energyCostDisplay').textContent = `${cost} ⚡`;
-  
   const chance = Math.round(getViralChance() * 100);
   document.getElementById('viralChanceDisplay').textContent = `${chance}%`;
 }
@@ -651,7 +619,7 @@ function renderStyles() {
         <i data-lucide="${style.icon}" class="w-4 h-4 ${selected ? 'text-football-green' : 'text-tg-muted'}"></i>
         <div class="flex-1 min-w-0 text-left">
           <div class="font-medium text-xs">${style.name}</div>
-          <div class="text-[10px] text-tg-muted">×${style.costMultiplier} ⚡ • ×${style.viewMultiplier} </div>
+          <div class="text-[10px] text-tg-muted">×${style.costMultiplier} ⚡ • ×${style.viewMultiplier} 👁</div>
         </div>
       </button>
     `;
@@ -705,7 +673,7 @@ function renderLeaderboard(players, myRank) {
     const rank = index + 1;
     const isMe = player.userId === gameState.userId;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'bg-tg-bg/40';
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '' : `#${rank}`;
     return `
       <div class="flex items-center gap-3 p-3 ${isMe ? 'bg-football-green/10 border-l-2 border-football-green' : ''}">
         <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm flex-shrink-0">
@@ -853,7 +821,6 @@ function buyPlatform(level) {
 async function createVideo() {
   const energyCost = getCurrentEnergyCost();
   if (gameState.energy < energyCost) return;
-  
   gameState.energy -= energyCost;
   updateHeaderUI();
   if (window.haptic) window.haptic('medium');
@@ -868,7 +835,6 @@ async function createVideo() {
   genModal.classList.remove('flex');
 
   const result = calculateViewsAndCoins();
-  
   gameState.views += result.views;
   gameState.coins += result.coins;
   gameState.stats.videosCreated++;
@@ -890,20 +856,26 @@ async function createVideo() {
   if (window.hapticSuccess) window.hapticSuccess();
 }
 
+// ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОКАЗА РЕЗУЛЬТАТА ==========
 function showResult(result) {
   const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
   document.getElementById('resultText').innerHTML = `Твой контент "${topic.name}" набирает популярность!`;
   
-  // Анимация постепенного роста просмотров
   const viewsEl = document.getElementById('resultViews');
   const coinsEl = document.getElementById('resultCoins');
   const viralBadge = document.getElementById('viralBadge');
   const viewsGrowthEl = document.getElementById('viewsGrowth');
   
-  // Сброс
+  // Сброс значений
   viewsEl.textContent = '0';
   coinsEl.textContent = '$0';
   viralBadge.classList.add('hidden');
+  
+  // ВАЖНО: Очищаем старый интервал если он есть (это исправляет баг!)
+  if (viewsGrowthInterval) {
+    clearInterval(viewsGrowthInterval);
+    viewsGrowthInterval = null;
+  }
   
   // Показываем модалку
   const modal = document.getElementById('resultModal');
@@ -911,33 +883,41 @@ function showResult(result) {
   modal.classList.add('flex');
   
   // Анимация роста
-  const duration = 2500; // 2.5 секунды
+  const duration = 2500;
   const steps = 50;
   const interval = duration / steps;
   let currentViews = 0;
   let currentCoins = 0;
+  let step = 0;
   
-  const growthInterval = setInterval(() => {
+  // Создаём новый интервал и сохраняем его
+  viewsGrowthInterval = setInterval(() => {
+    step++;
     currentViews += result.views / steps;
     currentCoins += result.coins / steps;
     
     viewsEl.textContent = formatNumber(Math.floor(currentViews));
     coinsEl.textContent = formatCoins(Math.floor(currentCoins));
     
-    // Показываем скорость роста
     const viewsPerSec = Math.floor(result.views / (duration / 1000));
     viewsGrowthEl.textContent = `+${formatNumber(viewsPerSec)}/сек`;
     
+    // ВАЖНО: Останавливаем интервал когда дошли до конца
+    if (step >= steps) {
+      clearInterval(viewsGrowthInterval);
+      viewsGrowthInterval = null;
+      // Устанавливаем финальные точные значения
+      viewsEl.textContent = formatNumber(result.views);
+      coinsEl.textContent = formatCoins(result.coins);
+    }
   }, interval);
   
   // Показываем вирусный бейдж если есть
   if (result.isSuperViral) {
     setTimeout(() => {
       viralBadge.classList.remove('hidden');
-      viralBadge.innerHTML = '<div class="text-xs text-football-gold font-bold viral-badge">🔥🔥 СУПЕР ВИРУСНЫЙ УСПЕХ! 🔥🔥🔥</div>';
-      if (window.haptic) {
-        tg.HapticFeedback.notificationOccurred('success');
-      }
+      viralBadge.innerHTML = '<div class="text-xs text-football-gold font-bold viral-badge">🔥 СУПЕР ВИРУСНЫЙ УСПЕХ! 🔥</div>';
+      if (window.haptic) tg.HapticFeedback.notificationOccurred('success');
     }, 1000);
   } else if (result.isViral) {
     setTimeout(() => {
@@ -945,15 +925,16 @@ function showResult(result) {
       viralBadge.innerHTML = '<div class="text-xs text-football-gold font-bold viral-badge">⭐ ВИРУСНЫЙ УСПЕХ!</div>';
     }, 1000);
   }
-  
-  // Сохраняем интервал для закрытия
-  window.currentGrowthInterval = growthInterval;
 }
 
+// ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАКРЫТИЯ ==========
 function closeResult() {
-  if (window.currentGrowthInterval) {
-    clearInterval(window.currentGrowthInterval);
+  // ВАЖНО: Гарантированно очищаем интервал при закрытии
+  if (viewsGrowthInterval) {
+    clearInterval(viewsGrowthInterval);
+    viewsGrowthInterval = null;
   }
+  
   const modal = document.getElementById('resultModal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');
@@ -1090,6 +1071,7 @@ function init() {
   console.log('%c Football Media Tycoon запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
+// Переинициализация иконок
 const origRenderTasks = renderTasks;
 const origRenderHardware = renderHardware;
 const origRenderPlatforms = renderPlatforms;
