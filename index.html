@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>Football Media Tycoon</title>
+<title>Football Tycoon</title>
 
 <!-- Telegram WebApp SDK -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -31,7 +31,8 @@
           'football-dark': '#059669',
           'football-gold': '#fbbf24',
           'football-blue': '#3b82f6',
-          'football-red': '#ef4444'
+          'football-red': '#ef4444',
+          'football-purple': '#a855f7'
         },
         fontFamily: {
           sans: ['-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif']
@@ -40,12 +41,14 @@
           'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           'fade-in': 'fadeIn 0.3s ease-out',
           'float-up': 'floatUp 1.5s ease-out forwards',
-          'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+          'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+          'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
         },
         keyframes: {
           slideUp: { '0%': { transform: 'translateY(30px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
           fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
-          floatUp: { '0%': { transform: 'translateY(0)', opacity: '1' }, '100%': { transform: 'translateY(-60px)', opacity: '0' } }
+          floatUp: { '0%': { transform: 'translateY(0)', opacity: '1' }, '100%': { transform: 'translateY(-60px)', opacity: '0' } },
+          bounceIn: { '0%': { transform: 'scale(0.3)', opacity: '0' }, '50%': { transform: 'scale(1.05)' }, '100%': { transform: 'scale(1)', opacity: '1' } }
         }
       }
     }
@@ -65,12 +68,12 @@
   .tab-visible { opacity: 1; transform: translateY(0); }
   .glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
   .glow-gold { box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
-  .btn-publish { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.2s ease; }
-  .btn-publish:hover:not(:disabled) { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); transform: translateY(-1px); }
-  .btn-publish:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
+  .btn-play { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.2s ease; }
+  .btn-play:hover:not(:disabled) { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); transform: translateY(-1px); }
+  .btn-play:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
   .glass-card { background: rgba(22, 27, 34, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(48, 54, 61, 0.6); }
   .energy-bar { background: linear-gradient(90deg, #10b981 0%, #34d399 100%); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); transition: width 0.3s ease; }
-  .floating-number { position: absolute; pointer-events: none; font-weight: 700; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6); animation: floatUp 1.5s ease-out forwards; z-index: 100; }
+  .floating-number { position: fixed; pointer-events: none; font-weight: 700; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6); animation: floatUp 1.5s ease-out forwards; z-index: 100; }
   .spinner { border: 3px solid rgba(16, 185, 129, 0.2); border-top-color: #10b981; border-radius: 50%; width: 48px; height: 48px; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
   .nav-item-active { color: #10b981; }
@@ -80,6 +83,10 @@
   .rank-3 { background: linear-gradient(135deg, #b45309 0%, #92400e 100%); color: #fff; }
   .viral-badge { animation: pulse 2s infinite; }
   @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+  .stat-bar { transition: width 0.5s ease; }
+  .result-win { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1)); border-color: #10b981; }
+  .result-draw { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)); border-color: #3b82f6; }
+  .result-lose { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1)); border-color: #ef4444; }
 </style>
 </head>
 
@@ -95,7 +102,7 @@
           <i data-lucide="trophy" class="w-4 h-4 text-white"></i>
         </div>
         <h1 class="text-sm font-bold bg-gradient-to-r from-football-green to-football-gold bg-clip-text text-transparent">
-          Football Media Tycoon
+          Football Tycoon
         </h1>
       </div>
     </div>
@@ -110,10 +117,10 @@
       </div>
       <div class="bg-tg-bg/60 rounded-lg px-2 py-1.5 border border-tg-border">
         <div class="flex items-center gap-1 text-[10px] text-tg-muted uppercase tracking-wider">
-          <i data-lucide="eye" class="w-3 h-3 text-football-blue"></i>
-          <span>Просмотры</span>
+          <i data-lucide="users" class="w-3 h-3 text-football-blue"></i>
+          <span>Фанаты</span>
         </div>
-        <div id="viewsDisplay" class="text-sm font-bold text-football-blue tabular-nums">0</div>
+        <div id="fansDisplay" class="text-sm font-bold text-football-blue tabular-nums">0</div>
       </div>
       <div class="bg-tg-bg/60 rounded-lg px-2 py-1.5 border border-tg-border">
         <div class="flex items-center justify-between text-[10px] text-tg-muted uppercase tracking-wider">
@@ -141,50 +148,52 @@
   <!-- ОСНОВНОЙ КОНТЕНТ -->
   <main class="flex-1 relative pb-20">
 
-    <!-- ВКЛАДКА: СТУДИЯ -->
-    <section id="tab-studio" class="tab-content tab-visible px-4 py-4">
+    <!-- ВКЛАДКА: МАТЧ -->
+    <section id="tab-match" class="tab-content tab-visible px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-        <i data-lucide="video" class="w-5 h-5 text-football-green"></i>
-        Футбольная студия
+        <i data-lucide="flag" class="w-5 h-5 text-football-green"></i>
+        Матч
       </h2>
 
+      <!-- Панель характеристик -->
       <div class="glass-card rounded-xl p-4 mb-3">
-        <label class="text-xs text-tg-muted uppercase tracking-wider mb-2 block">Тип контента</label>
-        <div id="topicsList" class="grid grid-cols-1 gap-2"></div>
-      </div>
-
-      <div class="glass-card rounded-xl p-4 mb-4">
-        <label class="text-xs text-tg-muted uppercase tracking-wider mb-2 block">Формат</label>
-        <div id="stylesList" class="grid grid-cols-2 gap-2"></div>
-      </div>
-
-      <!-- Инфо о стоимости -->
-      <div class="glass-card rounded-xl p-3 mb-4 bg-football-green/5 border border-football-green/20">
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-tg-muted">Стоимость:</span>
-          <span id="energyCostDisplay" class="text-football-green font-bold">20 ⚡</span>
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-bold flex items-center gap-2">
+            <i data-lucide="user" class="w-4 h-4 text-football-gold"></i>
+            Характеристики игрока
+          </h3>
+          <span id="totalSkill" class="text-xs text-football-green font-bold">0/600</span>
         </div>
-        <div class="flex items-center justify-between text-xs mt-1">
-          <span class="text-tg-muted">Шанс вирусности:</span>
-          <span id="viralChanceDisplay" class="text-football-gold font-bold">10%</span>
-        </div>
+        <div id="characteristicsList" class="space-y-2"></div>
       </div>
 
-      <button id="publishBtn" class="btn-publish press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2">
-        <i data-lucide="send" class="w-5 h-5"></i>
-        <span>Опубликовать</span>
+      <!-- Кнопка сыграть матч -->
+      <button id="playMatchBtn" class="btn-play press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 mb-3">
+        <i data-lucide="play" class="w-5 h-5"></i>
+        <span>Сыграть матч</span>
+        <span class="ml-1 text-xs opacity-80">(−50 ⚡)</span>
       </button>
 
-      <div class="mt-4 glass-card rounded-xl p-4">
+      <!-- Услуги -->
+      <div class="glass-card rounded-xl p-4 mb-4">
+        <h3 class="text-sm font-bold flex items-center gap-2 mb-3">
+          <i data-lucide="sparkles" class="w-4 h-4 text-football-purple"></i>
+          Услуги
+        </h3>
+        <div id="servicesList" class="grid grid-cols-2 gap-2"></div>
+      </div>
+
+      <!-- История матчей -->
+      <div class="glass-card rounded-xl p-4">
         <div class="flex items-center justify-between mb-2">
           <h3 class="text-sm font-bold flex items-center gap-2">
-            <i data-lucide="activity" class="w-4 h-4 text-football-blue"></i>
-            Последние публикации
+            <i data-lucide="history" class="w-4 h-4 text-football-blue"></i>
+            История матчей
           </h3>
-          <span id="videosCount" class="text-xs text-tg-muted">0 создано</span>
+          <span id="matchesCount" class="text-xs text-tg-muted">0 сыграно</span>
         </div>
-        <div id="recentVideos" class="space-y-2 text-xs text-tg-muted">
-          <div class="text-center py-4 opacity-60">Пока нет публикаций. Создай первую!</div>
+        <div id="recentMatches" class="space-y-2 text-xs text-tg-muted">
+          <div class="text-center py-4 opacity-60">Пока нет матчей. Сыграй первый!</div>
         </div>
       </div>
     </section>
@@ -193,23 +202,34 @@
     <section id="tab-shop" class="tab-content tab-hidden px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
         <i data-lucide="shopping-bag" class="w-5 h-5 text-football-gold"></i>
-        Магазин улучшений
+        Магазин
       </h2>
 
+      <!-- Прокачка характеристик -->
       <div class="mb-4">
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2">
-          <i data-lucide="cpu" class="w-4 h-4 text-football-green"></i>
-          Оборудование
+          <i data-lucide="dumbbell" class="w-4 h-4 text-football-green"></i>
+          Прокачка навыков
+        </h3>
+        <div id="skillsList" class="space-y-2"></div>
+      </div>
+
+      <!-- Оборудование -->
+      <div class="mb-4">
+        <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2">
+          <i data-lucide="cpu" class="w-4 h-4 text-football-blue"></i>
+          Оборудование (пассивный доход)
         </h3>
         <div id="hardwareList" class="space-y-2"></div>
       </div>
 
+      <!-- Платформы -->
       <div>
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2">
           <i data-lucide="star" class="w-4 h-4 text-football-gold"></i>
-          Платформы
+          Платформы (множитель наград)
         </h3>
-        <div id="neuralList" class="space-y-2"></div>
+        <div id="platformsList" class="space-y-2"></div>
       </div>
     </section>
 
@@ -224,8 +244,8 @@
         <div class="text-center mb-4">
           <div class="text-xs text-tg-muted mb-1">Твоё место</div>
           <div id="myRank" class="text-3xl font-bold text-football-green">#--</div>
-          <div id="myViews" class="text-sm text-tg-muted mt-1">0 просмотров</div>
-          <div id="myCoins" class="text-xs text-football-gold mt-0.5">0 монет</div>
+          <div id="myFans" class="text-sm text-tg-muted mt-1">0 фанатов</div>
+          <div id="myCoins" class="text-xs text-football-gold mt-0.5">$0 монет</div>
         </div>
       </div>
 
@@ -257,9 +277,9 @@
   <!-- НИЖНЯЯ НАВИГАЦИЯ -->
   <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] glass-card border-t border-tg-border z-30">
     <div class="grid grid-cols-4">
-      <button data-tab="studio" class="nav-item nav-item-active press-effect relative py-3 flex flex-col items-center gap-1 transition-colors">
-        <i data-lucide="video" class="w-5 h-5"></i>
-        <span class="text-[10px] font-medium">Студия</span>
+      <button data-tab="match" class="nav-item nav-item-active press-effect relative py-3 flex flex-col items-center gap-1 transition-colors">
+        <i data-lucide="flag" class="w-5 h-5"></i>
+        <span class="text-[10px] font-medium">Матч</span>
       </button>
       <button data-tab="shop" class="nav-item press-effect relative py-3 flex flex-col items-center gap-1 text-tg-muted transition-colors">
         <i data-lucide="shopping-bag" class="w-5 h-5"></i>
@@ -276,43 +296,38 @@
     </div>
   </nav>
 
-  <!-- МОДАЛКА: РЕЗУЛЬТАТ -->
-  <div id="resultModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-    <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-slide-up border border-football-green/30">
+  <!-- МОДАЛКА: РЕЗУЛЬТАТ МАТЧА -->
+  <div id="matchResultModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div id="matchResultCard" class="glass-card rounded-2xl p-6 max-w-sm w-full animate-slide-up border-2">
       <div class="flex justify-center mb-4">
-        <div id="resultIcon" class="w-16 h-16 rounded-full bg-gradient-to-br from-football-green to-football-gold flex items-center justify-center glow-green">
-          <i data-lucide="trending-up" class="w-8 h-8 text-white"></i>
+        <div id="resultIcon" class="w-20 h-20 rounded-full flex items-center justify-center">
+          <i id="resultIconInner" data-lucide="trophy" class="w-10 h-10 text-white"></i>
         </div>
       </div>
-      <h3 class="text-center text-lg font-bold mb-2">Просмотры растут!</h3>
+      <h3 id="resultTitle" class="text-center text-xl font-bold mb-2">ПОБЕДА!</h3>
       <p id="resultText" class="text-center text-sm text-tg-text mb-4 leading-relaxed"></p>
       
       <div id="resultStats" class="grid grid-cols-2 gap-2 mb-4">
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
-          <div class="text-[10px] text-tg-muted uppercase">Просмотры</div>
-          <div id="resultViews" class="text-2xl font-bold text-football-blue tabular-nums">0</div>
-          <div id="viewsGrowth" class="text-[10px] text-football-green mt-1">+0/сек</div>
+          <div class="text-[10px] text-tg-muted uppercase">Фанаты</div>
+          <div id="resultFans" class="text-2xl font-bold text-football-blue tabular-nums">0</div>
         </div>
         <div class="bg-tg-bg/60 rounded-lg p-3 text-center border border-tg-border">
           <div class="text-[10px] text-tg-muted uppercase">Монеты</div>
           <div id="resultCoins" class="text-2xl font-bold text-football-gold tabular-nums">$0</div>
         </div>
       </div>
-
-      <div id="viralBadge" class="hidden mb-4 p-3 bg-gradient-to-r from-football-gold/20 to-football-red/20 border border-football-gold/40 rounded-lg text-center">
-        <div class="text-xs text-football-gold font-bold viral-badge">🔥 ВИРУСНЫЙ УСПЕХ!</div>
-      </div>
       
-      <button id="closeResultBtn" class="btn-publish press-effect w-full py-3 rounded-xl text-white font-bold">Отлично!</button>
+      <button id="closeResultBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold">Отлично!</button>
     </div>
   </div>
 
-  <!-- МОДАЛКА: ГЕНЕРАЦИЯ -->
-  <div id="generatingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm">
+  <!-- МОДАЛКА: ИДЁТ МАТЧ -->
+  <div id="playingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-8 text-center animate-fade-in">
       <div class="spinner mx-auto mb-4"></div>
-      <h3 class="text-base font-bold mb-1">Монтаж видео...</h3>
-      <p class="text-xs text-tg-muted">Готовим футбольный контент</p>
+      <h3 class="text-base font-bold mb-1">Матч идёт...</h3>
+      <p class="text-xs text-tg-muted">Борьба за победу</p>
     </div>
   </div>
 
@@ -331,68 +346,109 @@ const firebaseConfig = {
   appId: "1:1096681978144:web:4c8e2536b3d7bf70d37f45"
 };
 
-firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+// Инициализация Firebase с проверкой
+let database;
+try {
+  if (!firebase.apps.length) {
+    firebase.initializeApp(firebaseConfig);
+  }
+  database = firebase.database();
+  console.log('✅ Firebase инициализирован');
+} catch (error) {
+  console.error('Ошибка Firebase:', error);
+  database = null;
+}
 
 // ========== КОНФИГУРАЦИЯ ИГРЫ ==========
 const CONFIG = {
-  topics: [
-    { id: 'match', name: 'Обзор матча', icon: 'flag', color: 'football-blue', baseCost: 20, viralChance: 0.15 },
-    { id: 'transfer', name: 'Трансферные новости', icon: 'refresh-cw', color: 'football-green', baseCost: 15, viralChance: 0.10 },
-    { id: 'scandal', name: 'Скандалы и слухи', icon: 'alert-circle', color: 'football-red', baseCost: 25, viralChance: 0.25 },
-    { id: 'stats', name: 'Статистика игроков', icon: 'bar-chart-2', color: 'football-gold', baseCost: 18, viralChance: 0.12 }
-  ],
-  styles: [
-    { id: 'shorts', name: 'Shorts/Reels', icon: 'smartphone', costMultiplier: 0.7, viewMultiplier: 0.6 },
-    { id: 'long', name: 'Длинное видео', icon: 'video', costMultiplier: 1.5, viewMultiplier: 2.0 }
-  ],
-  baseViews: { min: 3000, max: 10000 },
-  baseCoins: { min: 30, max: 100 },
+  matchCost: 50,
+  serviceCost: 20,
   maxEnergy: 100,
   energyRegenMs: 3000,
-  generationMs: 2000,
+  matchDurationMs: 2500,
   passiveIncomeMs: 1000,
   autoSaveMs: 5000
 };
 
+// Характеристики игрока
+const CHARACTERISTICS = [
+  { id: 'stamina', name: 'Выносливость', icon: 'heart-pulse', baseCost: 100, desc: 'Влияет на результат' },
+  { id: 'strength', name: 'Физ. сила', icon: 'dumbbell', baseCost: 150, desc: 'Влияет на результат' },
+  { id: 'dribbling', name: 'Дриблинг', icon: 'zap', baseCost: 200, desc: 'Влияет на результат' },
+  { id: 'shotPower', name: 'Сила удара', icon: 'target', baseCost: 250, desc: 'Влияет на результат' },
+  { id: 'technique', name: 'Техника', icon: 'sparkles', baseCost: 300, desc: 'Влияет на результат' },
+  { id: 'speed', name: 'Скорость', icon: 'gauge', baseCost: 350, desc: 'Влияет на результат' }
+];
+
+// Услуги
+const SERVICES = [
+  { id: 'gym', name: 'Тренажёрный зал', icon: 'dumbbell', cost: 20, effects: { strength: 1, stamina: 1 }, color: 'football-red', desc: '+1 Сила, +1 Выносливость' },
+  { id: 'boots', name: 'Новые бутсы', icon: 'footprints', cost: 20, effects: { dribbling: 1, technique: 1 }, color: 'football-blue', desc: '+1 Дриблинг, +1 Техника' },
+  { id: 'nutrition', name: 'Спорт. питание', icon: 'apple', cost: 20, effects: { stamina: 1, strength: 1, speed: 1 }, color: 'football-green', desc: '+1 Выносл., +1 Сила, +1 Скорость' },
+  { id: 'massage', name: 'Массаж', icon: 'heart', cost: 20, effects: { technique: 1, speed: 1, stamina: 1 }, color: 'football-gold', desc: '+1 Техника, +1 Скорость, +1 Выносл.' }
+];
+
+// Оборудование (пассивный доход)
 const HARDWARE = [
   { id: 'phone', name: 'Смартфон', icon: 'smartphone', baseCost: 100, income: 1, color: 'from-gray-500 to-gray-700' },
   { id: 'camera', name: 'Камера 4K', icon: 'video', baseCost: 500, income: 5, color: 'from-football-green to-football-dark' },
   { id: 'studio', name: 'Домашняя студия', icon: 'monitor', baseCost: 2500, income: 25, color: 'from-football-blue to-blue-700' },
-  { id: 'pro', name: 'Профессиональная студия', icon: 'tv', baseCost: 15000, income: 150, color: 'from-football-gold to-yellow-600' }
+  { id: 'pro', name: 'Проф. студия', icon: 'tv', baseCost: 15000, income: 150, color: 'from-football-gold to-yellow-600' }
 ];
 
+// Платформы (множитель наград)
 const PLATFORMS = [
-  { id: 'telegram', name: 'Telegram', icon: 'send', cost: 0, multiplier: 1.0, desc: 'Базовый уровень' },
-  { id: 'youtube', name: 'YouTube', icon: 'youtube', cost: 1000, multiplier: 1.5, desc: '×1.5 к просмотрам' },
-  { id: 'tiktok', name: 'TikTok', icon: 'music', cost: 5000, multiplier: 2.25, desc: '×2.25 к просмотрам' },
-  { id: 'all', name: 'Все платформы', icon: 'globe', cost: 25000, multiplier: 3.5, desc: '×3.5 к просмотрам' }
+  { id: 'local', name: 'Местный клуб', icon: 'home', cost: 0, multiplier: 1.0, desc: 'Базовый уровень' },
+  { id: 'regional', name: 'Региональная лига', icon: 'map', cost: 1000, multiplier: 1.5, desc: '×1.5 к наградам' },
+  { id: 'national', name: 'Национальная лига', icon: 'flag', cost: 5000, multiplier: 2.25, desc: '×2.25 к наградам' },
+  { id: 'international', name: 'Международная', icon: 'globe', cost: 25000, multiplier: 3.5, desc: '×3.5 к наградам' }
 ];
 
+// Задания
 const TASKS = [
-  { id: 'subscribe', title: 'Подписаться на футбольный канал', desc: 'Поддержите автора проекта', reward: 500, icon: 'send', color: 'football-blue', type: 'instant' },
+  { id: 'subscribe', title: 'Подписаться на канал', desc: 'Поддержите автора проекта', reward: 500, icon: 'send', color: 'football-blue', type: 'instant' },
   { id: 'ad', title: 'Посмотреть рекламу', desc: '5 секунд = 1000 монет', reward: 1000, icon: 'tv', color: 'football-red', type: 'timer', duration: 5 }
 ];
 
+// ========== СОСТОЯНИЕ ИГРЫ ==========
 let gameState = {
   coins: 100,
-  views: 0,
+  fans: 0,
   energy: CONFIG.maxEnergy,
-  selectedTopic: 'match',
-  selectedStyle: 'shorts',
+  // Характеристики (уровни от 0 до 100)
+  characteristics: {
+    stamina: 0,
+    strength: 0,
+    dribbling: 0,
+    shotPower: 0,
+    technique: 0,
+    speed: 0
+  },
+  // Оборудование
   hardware: { phone: 0, camera: 0, studio: 0, pro: 0 },
+  // Уровень платформы
   platformLevel: 0,
+  // Выполненные задания
   completedTasks: { subscribe: false, ad: false },
-  stats: { videosCreated: 0, recentVideos: [] },
+  // Статистика
+  stats: {
+    matchesPlayed: 0,
+    wins: 0,
+    draws: 0,
+    losses: 0,
+    recentMatches: []
+  },
   username: 'Player',
   userId: null,
   lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v3';
+const SAVE_KEY = 'football_tycoon_save_v4';
 let tg = null;
 let leaderboardUnsubscribe = null;
-let viewsGrowthInterval = null; // Переменная для хранения интервала анимации
+let passiveIncomeInterval = null;
+let energyRegenInterval = null;
+let autoSaveInterval = null;
 
 // ========== TELEGRAM INIT ==========
 function initTelegram() {
@@ -418,75 +474,124 @@ function initTelegram() {
     if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
     else if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
   };
-  if (tg.BackButton) tg.BackButton.onClick(() => switchTab('studio'));
+  if (tg.BackButton) tg.BackButton.onClick(() => switchTab('match'));
   console.log('✅ Telegram WebApp инициализирован');
 }
 
 // ========== FIREBASE ФУНКЦИИ ==========
 async function syncWithFirebase() {
-  if (!gameState.userId) return;
+  if (!gameState.userId || !database) return;
   try {
     const playerRef = database.ref('players/' + gameState.userId);
     const snapshot = await playerRef.once('value');
     if (snapshot.exists()) {
       const data = snapshot.val();
+      // Берём максимальные значения из Firebase и локальных
       gameState.coins = Math.max(gameState.coins, data.coins || 0);
-      gameState.views = Math.max(gameState.views, data.views || 0);
-      gameState.hardware = { ...gameState.hardware, ...(data.hardware || {}) };
+      gameState.fans = Math.max(gameState.fans, data.fans || 0);
+      // Характеристики — берём максимум
+      if (data.characteristics) {
+        for (let key in gameState.characteristics) {
+          gameState.characteristics[key] = Math.max(
+            gameState.characteristics[key],
+            data.characteristics[key] || 0
+          );
+        }
+      }
+      // Оборудование — берём максимум
+      if (data.hardware) {
+        for (let key in gameState.hardware) {
+          gameState.hardware[key] = Math.max(
+            gameState.hardware[key],
+            data.hardware[key] || 0
+          );
+        }
+      }
       gameState.platformLevel = Math.max(gameState.platformLevel, data.platformLevel || 0);
-      gameState.stats.videosCreated = Math.max(gameState.stats.videosCreated, data.stats?.videosCreated || 0);
+      gameState.stats.matchesPlayed = Math.max(gameState.stats.matchesPlayed, data.stats?.matchesPlayed || 0);
+      gameState.stats.wins = Math.max(gameState.stats.wins, data.stats?.wins || 0);
+      gameState.stats.draws = Math.max(gameState.stats.draws, data.stats?.draws || 0);
+      gameState.stats.losses = Math.max(gameState.stats.losses, data.stats?.losses || 0);
+      console.log('Данные загружены из Firebase');
     } else {
       await playerRef.set({
         username: gameState.username,
         coins: gameState.coins,
-        views: gameState.views,
-        hardware: gameState.hardware,
+        fans: gameState.fans,
+        characteristics: { ...gameState.characteristics },
+        hardware: { ...gameState.hardware },
         platformLevel: gameState.platformLevel,
-        stats: { videosCreated: gameState.stats.videosCreated },
+        stats: {
+          matchesPlayed: gameState.stats.matchesPlayed,
+          wins: gameState.stats.wins,
+          draws: gameState.stats.draws,
+          losses: gameState.stats.losses
+        },
         lastOnline: Date.now()
       });
+      console.log('Новый игрок создан в Firebase');
     }
     gameState.lastSync = Date.now();
-  } catch (error) { console.error('Ошибка синхронизации:', error); }
+  } catch (error) {
+    console.error('Ошибка синхронизации:', error);
+  }
 }
 
 async function updatePlayerData() {
-  if (!gameState.userId || Date.now() - gameState.lastSync < 5000) return;
+  if (!gameState.userId || !database || Date.now() - gameState.lastSync < 5000) return;
   try {
     await database.ref('players/' + gameState.userId).update({
       username: gameState.username,
       coins: gameState.coins,
-      views: gameState.views,
-      hardware: gameState.hardware,
+      fans: gameState.fans,
+      characteristics: { ...gameState.characteristics },
+      hardware: { ...gameState.hardware },
       platformLevel: gameState.platformLevel,
-      stats: { videosCreated: gameState.stats.videosCreated },
+      stats: {
+        matchesPlayed: gameState.stats.matchesPlayed,
+        wins: gameState.stats.wins,
+        draws: gameState.stats.draws,
+        losses: gameState.stats.losses
+      },
       lastOnline: Date.now()
     });
     gameState.lastSync = Date.now();
-  } catch (error) { console.error('Ошибка обновления:', error); }
+  } catch (error) {
+    console.error('Ошибка обновления:', error);
+  }
 }
 
 function listenToLeaderboard() {
+  if (!database) {
+    renderLeaderboard([], 1);
+    document.getElementById('playersCount').textContent = '0 игроков';
+    return;
+  }
   const leaderboardRef = database.ref('players');
-  if (leaderboardUnsubscribe) leaderboardUnsubscribe();
-  leaderboardUnsubscribe = leaderboardRef.on('value', (snapshot) => {
+  if (leaderboardUnsubscribe) {
+    leaderboardRef.off('value', leaderboardUnsubscribe);
+  }
+  const callback = (snapshot) => {
     const players = [];
     snapshot.forEach((childSnapshot) => {
       const data = childSnapshot.val();
       players.push({
         userId: childSnapshot.key,
         username: data.username || 'Unknown',
-        views: data.views || 0,
+        fans: data.fans || 0,
         coins: data.coins || 0,
         lastOnline: data.lastOnline || 0
       });
     });
-    players.sort((a, b) => b.views - a.views);
+    // Сортируем по фанатам (убывание)
+    players.sort((a, b) => b.fans - a.fans);
     const myIndex = players.findIndex(p => p.userId === gameState.userId);
     const myRank = myIndex === -1 ? players.length + 1 : myIndex + 1;
     renderLeaderboard(players.slice(0, 50), myRank);
     document.getElementById('playersCount').textContent = players.length + ' игроков';
-  });
+  };
+  leaderboardRef.on('value', callback);
+  leaderboardUnsubscribe = callback;
 }
 
 // ========== GAME FUNCTIONS ==========
@@ -501,6 +606,7 @@ function loadGame() {
     if (saved) {
       const parsed = JSON.parse(saved);
       gameState = { ...gameState, ...parsed };
+      gameState.characteristics = { ...gameState.characteristics, ...(parsed.characteristics || {}) };
       gameState.hardware = { ...gameState.hardware, ...(parsed.hardware || {}) };
       gameState.completedTasks = { ...gameState.completedTasks, ...(parsed.completedTasks || {}) };
       gameState.stats = { ...gameState.stats, ...(parsed.stats || {}) };
@@ -518,142 +624,112 @@ function formatNumber(n) {
 
 function formatCoins(n) { return '$' + formatNumber(n); }
 function randInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
-function getHardwareCost(hw, owned) { return Math.floor(hw.baseCost * Math.pow(1.15, owned)); }
+
+function getSkillCost(skillId, currentLevel) {
+  const skill = CHARACTERISTICS.find(s => s.id === skillId);
+  if (!skill) return 100;
+  return Math.floor(skill.baseCost * Math.pow(1.1, currentLevel));
+}
+
+function getHardwareCost(hw, owned) {
+  return Math.floor(hw.baseCost * Math.pow(1.15, owned));
+}
+
+function getTotalSkill() {
+  let total = 0;
+  for (let key in gameState.characteristics) {
+    total += gameState.characteristics[key];
+  }
+  return total;
+}
+
 function getPassiveIncome() {
   let total = 0;
   HARDWARE.forEach(h => { total += h.income * (gameState.hardware[h.id] || 0); });
   return total;
 }
+
 function getMultiplier() { return PLATFORMS[gameState.platformLevel].multiplier; }
-
-function getCurrentEnergyCost() {
-  const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
-  const style = CONFIG.styles.find(s => s.id === gameState.selectedStyle);
-  if (!topic || !style) return 20;
-  return Math.floor(topic.baseCost * style.costMultiplier);
-}
-
-function getViralChance() {
-  const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
-  const style = CONFIG.styles.find(s => s.id === gameState.selectedStyle);
-  if (!topic || !style) return 0.1;
-  const styleBonus = style.id === 'long' ? 1.5 : 1.0;
-  return Math.min(topic.viralChance * styleBonus, 0.5);
-}
-
-function calculateViewsAndCoins() {
-  const style = CONFIG.styles.find(s => s.id === gameState.selectedStyle);
-  const multiplier = getMultiplier();
-  let baseViews = randInt(CONFIG.baseViews.min, CONFIG.baseViews.max);
-  let baseCoins = randInt(CONFIG.baseCoins.min, CONFIG.baseCoins.max);
-  baseViews *= style.viewMultiplier;
-  baseCoins *= style.viewMultiplier;
-  const viralChance = getViralChance();
-  const roll = Math.random();
-  let viralMultiplier = 1;
-  let isViral = false;
-  let isSuperViral = false;
-  if (roll < viralChance * 0.2) { viralMultiplier = randInt(15, 50); isSuperViral = true; }
-  else if (roll < viralChance) { viralMultiplier = randInt(5, 15); isViral = true; }
-  else if (roll < viralChance * 2) { viralMultiplier = randInt(2, 5); }
-  const finalViews = Math.floor(baseViews * viralMultiplier * multiplier);
-  const finalCoins = Math.floor(baseCoins * viralMultiplier * multiplier);
-  return { views: finalViews, coins: finalCoins, isViral: isViral || isSuperViral, isSuperViral: isSuperViral, viralMultiplier: viralMultiplier };
-}
 
 function updateHeaderUI() {
   document.getElementById('coinsDisplay').textContent = formatCoins(gameState.coins);
-  document.getElementById('viewsDisplay').textContent = formatNumber(gameState.views);
+  document.getElementById('fansDisplay').textContent = formatNumber(gameState.fans);
   document.getElementById('energyText').textContent = `${Math.floor(gameState.energy)}/${CONFIG.maxEnergy}`;
   document.getElementById('energyBar').style.width = (gameState.energy / CONFIG.maxEnergy * 100) + '%';
   document.getElementById('passiveIncomeDisplay').textContent = formatCoins(getPassiveIncome()) + '/сек';
-  const cost = getCurrentEnergyCost();
-  document.getElementById('publishBtn').disabled = gameState.energy < cost;
-  document.getElementById('energyCostDisplay').textContent = `${cost} ⚡`;
-  const chance = Math.round(getViralChance() * 100);
-  document.getElementById('viralChanceDisplay').textContent = `${chance}%`;
+  document.getElementById('playMatchBtn').disabled = gameState.energy < CONFIG.matchCost;
 }
 
-function renderTopics() {
-  const container = document.getElementById('topicsList');
-  container.innerHTML = CONFIG.topics.map(topic => {
-    const selected = gameState.selectedTopic === topic.id;
-    const colorClass = topic.color === 'football-blue' ? 'from-football-blue to-blue-700' :
-                       topic.color === 'football-green' ? 'from-football-green to-football-dark' :
-                       topic.color === 'football-red' ? 'from-football-red to-red-700' :
-                       'from-football-gold to-yellow-600';
+// ========== РЕНДЕРИНГ ==========
+function renderCharacteristics() {
+  const container = document.getElementById('characteristicsList');
+  const totalSkill = getTotalSkill();
+  document.getElementById('totalSkill').textContent = `${totalSkill}/600`;
+  
+  container.innerHTML = CHARACTERISTICS.map(skill => {
+    const level = gameState.characteristics[skill.id] || 0;
+    const percentage = (level / 100) * 100;
     return `
-      <button data-topic="${topic.id}" class="topic-btn press-effect flex items-center gap-3 p-3 rounded-lg border transition-all ${
-        selected ? 'border-football-green bg-football-green/10 glow-green' : 'border-tg-border bg-tg-bg/40 hover:border-tg-muted'
-      }">
-        <div class="w-9 h-9 rounded-lg bg-gradient-to-br ${colorClass} flex items-center justify-center">
-          <i data-lucide="${topic.icon}" class="w-4 h-4 text-white"></i>
+      <div class="flex items-center gap-2">
+        <div class="w-6 h-6 rounded bg-football-green/20 flex items-center justify-center flex-shrink-0">
+          <i data-lucide="${skill.icon}" class="w-3 h-3 text-football-green"></i>
         </div>
-        <div class="flex-1 min-w-0 text-left">
-          <div class="font-medium text-sm">${topic.name}</div>
-          <div class="text-[10px] text-tg-muted">${topic.baseCost} ⚡ • ${Math.round(topic.viralChance * 100)}% вирусности</div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center justify-between mb-0.5">
+            <span class="text-[11px] font-medium">${skill.name}</span>
+            <span class="text-[10px] text-football-green font-bold">${level}/100</span>
+          </div>
+          <div class="h-1.5 bg-tg-border rounded-full overflow-hidden">
+            <div class="stat-bar h-full bg-gradient-to-r from-football-green to-football-gold" style="width: ${percentage}%"></div>
+          </div>
         </div>
-        ${selected ? '<i data-lucide="check-circle-2" class="w-5 h-5 text-football-green flex-shrink-0"></i>' : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+function renderServices() {
+  const container = document.getElementById('servicesList');
+  container.innerHTML = SERVICES.map(service => {
+    const canAfford = gameState.energy >= service.cost;
+    return `
+      <button data-service="${service.id}" class="service-btn press-effect p-3 rounded-lg border transition-all ${
+        canAfford ? 'border-tg-border bg-tg-bg/40 hover:border-football-green' : 'border-tg-border/40 bg-tg-bg/20 opacity-50 cursor-not-allowed'
+      }" ${canAfford ? '' : 'disabled'}>
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-${service.color} to-${service.color === 'football-gold' ? 'yellow-600' : service.color === 'football-red' ? 'red-700' : service.color === 'football-blue' ? 'blue-700' : 'football-dark'} flex items-center justify-center mb-2 mx-auto">
+          <i data-lucide="${service.icon}" class="w-4 h-4 text-white"></i>
+        </div>
+        <div class="text-[11px] font-bold text-center mb-0.5">${service.name}</div>
+        <div class="text-[9px] text-tg-muted text-center">${service.desc}</div>
+        <div class="text-[10px] text-football-green text-center mt-1 font-bold">−${service.cost} ⚡</div>
       </button>
     `;
   }).join('');
-  container.querySelectorAll('.topic-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      gameState.selectedTopic = btn.dataset.topic;
-      if (window.haptic) window.haptic('light');
-      renderTopics();
-      updateHeaderUI();
-      saveGame();
-    });
+  container.querySelectorAll('.service-btn').forEach(btn => {
+    btn.addEventListener('click', () => useService(btn.dataset.service));
   });
 }
 
-function renderStyles() {
-  const container = document.getElementById('stylesList');
-  container.innerHTML = CONFIG.styles.map(style => {
-    const selected = gameState.selectedStyle === style.id;
-    return `
-      <button data-style="${style.id}" class="style-btn press-effect flex items-center gap-2 p-3 rounded-lg border transition-all ${
-        selected ? 'border-football-green bg-football-green/10 glow-green' : 'border-tg-border bg-tg-bg/40 hover:border-tg-muted'
-      }">
-        <i data-lucide="${style.icon}" class="w-4 h-4 ${selected ? 'text-football-green' : 'text-tg-muted'}"></i>
-        <div class="flex-1 min-w-0 text-left">
-          <div class="font-medium text-xs">${style.name}</div>
-          <div class="text-[10px] text-tg-muted">×${style.costMultiplier} ⚡ • ×${style.viewMultiplier} 👁</div>
-        </div>
-      </button>
-    `;
-  }).join('');
-  container.querySelectorAll('.style-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      gameState.selectedStyle = btn.dataset.style;
-      if (window.haptic) window.haptic('light');
-      renderStyles();
-      updateHeaderUI();
-      saveGame();
-    });
-  });
-}
-
-function renderRecentVideos() {
-  const container = document.getElementById('recentVideos');
-  document.getElementById('videosCount').textContent = gameState.stats.videosCreated + ' создано';
-  if (!gameState.stats.recentVideos.length) {
-    container.innerHTML = '<div class="text-center py-4 opacity-60">Пока нет публикаций. Создай первую!</div>';
+function renderRecentMatches() {
+  const container = document.getElementById('recentMatches');
+  document.getElementById('matchesCount').textContent = gameState.stats.matchesPlayed + ' сыграно';
+  if (!gameState.stats.recentMatches.length) {
+    container.innerHTML = '<div class="text-center py-4 opacity-60">Пока нет матчей. Сыграй первый!</div>';
     return;
   }
-  container.innerHTML = gameState.stats.recentVideos.slice(0, 5).map(v => {
-    const topic = CONFIG.topics.find(t => t.id === v.topic);
-    const viralBadge = v.isSuperViral ? '🔥' : v.isViral ? '⭐' : '';
+  container.innerHTML = gameState.stats.recentMatches.slice(0, 5).map(m => {
+    const resultClass = m.result === 'win' ? 'result-win' : m.result === 'draw' ? 'result-draw' : 'result-lose';
+    const resultText = m.result === 'win' ? 'Победа' : m.result === 'draw' ? 'Ничья' : 'Поражение';
+    const resultIcon = m.result === 'win' ? '🏆' : m.result === 'draw' ? '🤝' : '';
     return `
-      <div class="flex items-center justify-between p-2 bg-tg-bg/40 rounded-lg border border-tg-border">
-        <div class="flex items-center gap-2 min-w-0">
-          <i data-lucide="${topic?.icon || 'video'}" class="w-3.5 h-3.5 text-tg-muted flex-shrink-0"></i>
-          <span class="text-xs truncate">${topic?.name || 'Видео'} ${viralBadge}</span>
+      <div class="flex items-center justify-between p-2 ${resultClass} rounded-lg border">
+        <div class="flex items-center gap-2">
+          <span class="text-base">${resultIcon}</span>
+          <span class="text-xs font-bold">${resultText}</span>
         </div>
-        <div class="flex items-center gap-3 text-[11px] flex-shrink-0">
-          <span class="text-football-blue flex items-center gap-0.5"><i data-lucide="eye" class="w-3 h-3"></i>${formatNumber(v.views)}</span>
-          <span class="text-football-gold flex items-center gap-0.5"><i data-lucide="coins" class="w-3 h-3"></i>${formatNumber(v.coins)}</span>
+        <div class="flex items-center gap-3 text-[11px]">
+          <span class="text-football-blue flex items-center gap-0.5"><i data-lucide="users" class="w-3 h-3"></i>+${formatNumber(m.fans)}</span>
+          <span class="text-football-gold flex items-center gap-0.5"><i data-lucide="coins" class="w-3 h-3"></i>+${formatNumber(m.coins)}</span>
         </div>
       </div>
     `;
@@ -663,7 +739,7 @@ function renderRecentVideos() {
 function renderLeaderboard(players, myRank) {
   const container = document.getElementById('leaderboardList');
   document.getElementById('myRank').textContent = '#' + Math.min(myRank, 999);
-  document.getElementById('myViews').textContent = formatNumber(gameState.views) + ' просмотров';
+  document.getElementById('myFans').textContent = formatNumber(gameState.fans) + ' фанатов';
   document.getElementById('myCoins').textContent = formatCoins(gameState.coins);
   if (!players || players.length === 0) {
     container.innerHTML = '<div class="p-8 text-center text-tg-muted text-sm">Пока нет игроков. Будь первым!</div>';
@@ -673,7 +749,7 @@ function renderLeaderboard(players, myRank) {
     const rank = index + 1;
     const isMe = player.userId === gameState.userId;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'bg-tg-bg/40';
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '' : `#${rank}`;
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
     return `
       <div class="flex items-center gap-3 p-3 ${isMe ? 'bg-football-green/10 border-l-2 border-football-green' : ''}">
         <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm flex-shrink-0">
@@ -686,12 +762,48 @@ function renderLeaderboard(players, myRank) {
           <div class="text-[11px] text-tg-muted">${formatNumber(player.coins)} монет</div>
         </div>
         <div class="text-right">
-          <div class="text-sm font-bold text-football-blue tabular-nums">${formatNumber(player.views)}</div>
-          <div class="text-[10px] text-tg-muted">просмотров</div>
+          <div class="text-sm font-bold text-football-blue tabular-nums">${formatNumber(player.fans)}</div>
+          <div class="text-[10px] text-tg-muted">фанатов</div>
         </div>
       </div>
     `;
   }).join('');
+}
+
+function renderSkills() {
+  const container = document.getElementById('skillsList');
+  container.innerHTML = CHARACTERISTICS.map(skill => {
+    const level = gameState.characteristics[skill.id] || 0;
+    const cost = getSkillCost(skill.id, level);
+    const canAfford = gameState.coins >= cost && level < 100;
+    const isMaxed = level >= 100;
+    return `
+      <div class="glass-card rounded-xl p-3 flex items-center gap-3">
+        <div class="w-11 h-11 rounded-lg bg-gradient-to-br from-football-green to-football-gold flex items-center justify-center flex-shrink-0">
+          <i data-lucide="${skill.icon}" class="w-5 h-5 text-white"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm">${skill.name}</span>
+            <span class="text-[10px] bg-football-green/20 text-football-green px-1.5 py-0.5 rounded">Ур. ${level}</span>
+          </div>
+          <div class="text-[11px] text-tg-muted">${skill.desc}</div>
+          <div class="mt-1 h-1 bg-tg-border rounded-full overflow-hidden">
+            <div class="stat-bar h-full bg-gradient-to-r from-football-green to-football-gold" style="width: ${level}%"></div>
+          </div>
+        </div>
+        ${isMaxed
+          ? '<span class="text-[10px] text-football-gold px-2 py-1.5 font-bold">МАКС</span>'
+          : `<button data-skill="${skill.id}" class="buy-skill-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${
+              canAfford ? 'bg-football-green/20 text-football-green border border-football-green/40 hover:bg-football-green/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'
+            }" ${canAfford ? '' : 'disabled'}>${formatCoins(cost)}</button>`
+        }
+      </div>
+    `;
+  }).join('');
+  container.querySelectorAll('.buy-skill-btn').forEach(btn => {
+    btn.addEventListener('click', () => buySkill(btn.dataset.skill));
+  });
 }
 
 function renderHardware() {
@@ -724,7 +836,7 @@ function renderHardware() {
 }
 
 function renderPlatforms() {
-  const container = document.getElementById('neuralList');
+  const container = document.getElementById('platformsList');
   container.innerHTML = PLATFORMS.map((p, idx) => {
     const isCurrent = gameState.platformLevel === idx;
     const isPast = idx < gameState.platformLevel;
@@ -792,14 +904,31 @@ function renderTasks() {
   });
 }
 
+// ========== ДЕЙСТВИЯ ==========
+function buySkill(skillId) {
+  const skill = CHARACTERISTICS.find(s => s.id === skillId);
+  if (!skill) return;
+  const currentLevel = gameState.characteristics[skillId] || 0;
+  if (currentLevel >= 100) return;
+  const cost = getSkillCost(skillId, currentLevel);
+  if (gameState.coins < cost) return;
+  gameState.coins -= cost;
+  gameState.characteristics[skillId] = currentLevel + 1;
+  saveGame();
+  renderSkills();
+  renderCharacteristics();
+  updateHeaderUI();
+  if (window.haptic) window.haptic('light');
+}
+
 function buyHardware(hwId) {
   const hw = HARDWARE.find(h => h.id === hwId);
   if (!hw) return;
-  const owned = gameState.hardware[hw.id] || 0;
+  const owned = gameState.hardware[hwId] || 0;
   const cost = getHardwareCost(hw, owned);
   if (gameState.coins < cost) return;
   gameState.coins -= cost;
-  gameState.hardware[hw.id] = owned + 1;
+  gameState.hardware[hwId] = owned + 1;
   saveGame();
   renderHardware();
   updateHeaderUI();
@@ -818,124 +947,169 @@ function buyPlatform(level) {
   if (window.haptic) window.haptic('light');
 }
 
-async function createVideo() {
-  const energyCost = getCurrentEnergyCost();
-  if (gameState.energy < energyCost) return;
-  gameState.energy -= energyCost;
+function useService(serviceId) {
+  const service = SERVICES.find(s => s.id === serviceId);
+  if (!service) return;
+  if (gameState.energy < service.cost) return;
+  gameState.energy -= service.cost;
+  // Применяем эффекты
+  for (let key in service.effects) {
+    if (gameState.characteristics[key] !== undefined) {
+      gameState.characteristics[key] = Math.min(100, gameState.characteristics[key] + service.effects[key]);
+    }
+  }
+  saveGame();
+  renderServices();
+  renderCharacteristics();
+  updateHeaderUI();
+  showFloatingNumber(document.getElementById('servicesList'), '+' + Object.values(service.effects).reduce((a, b) => a + b, 0) + ' навыков');
+  if (window.haptic) window.haptic('light');
+}
+
+async function playMatch() {
+  if (gameState.energy < CONFIG.matchCost) return;
+  gameState.energy -= CONFIG.matchCost;
   updateHeaderUI();
   if (window.haptic) window.haptic('medium');
 
-  const genModal = document.getElementById('generatingModal');
-  genModal.classList.remove('hidden');
-  genModal.classList.add('flex');
+  const playingModal = document.getElementById('playingModal');
+  playingModal.classList.remove('hidden');
+  playingModal.classList.add('flex');
 
-  await new Promise(r => setTimeout(r, CONFIG.generationMs));
+  await new Promise(r => setTimeout(r, CONFIG.matchDurationMs));
 
-  genModal.classList.add('hidden');
-  genModal.classList.remove('flex');
+  playingModal.classList.add('hidden');
+  playingModal.classList.remove('flex');
 
-  const result = calculateViewsAndCoins();
-  gameState.views += result.views;
+  const result = calculateMatchResult();
+  
+  gameState.fans += result.fans;
   gameState.coins += result.coins;
-  gameState.stats.videosCreated++;
-  gameState.stats.recentVideos.unshift({
-    topic: gameState.selectedTopic,
-    style: gameState.selectedStyle,
-    views: result.views,
+  gameState.stats.matchesPlayed++;
+  if (result.result === 'win') gameState.stats.wins++;
+  else if (result.result === 'draw') gameState.stats.draws++;
+  else gameState.stats.losses++;
+  
+  gameState.stats.recentMatches.unshift({
+    result: result.result,
+    fans: result.fans,
     coins: result.coins,
-    isViral: result.isViral,
-    isSuperViral: result.isSuperViral,
     time: Date.now()
   });
-  if (gameState.stats.recentVideos.length > 10) gameState.stats.recentVideos.pop();
+  if (gameState.stats.recentMatches.length > 10) gameState.stats.recentMatches.pop();
 
   saveGame();
   updateHeaderUI();
-  renderRecentVideos();
-  showResult(result);
+  renderRecentMatches();
+  renderCharacteristics();
+  showMatchResult(result);
   if (window.hapticSuccess) window.hapticSuccess();
 }
 
-// ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ ПОКАЗА РЕЗУЛЬТАТА ==========
-function showResult(result) {
-  const topic = CONFIG.topics.find(t => t.id === gameState.selectedTopic);
-  document.getElementById('resultText').innerHTML = `Твой контент "${topic.name}" набирает популярность!`;
+function calculateMatchResult() {
+  const totalSkill = getTotalSkill();
+  const maxSkill = 600;
+  const skillRatio = totalSkill / maxSkill;
   
-  const viewsEl = document.getElementById('resultViews');
+  // Шанс победы растёт с навыками (от 15% до 85%)
+  const winChance = Math.min(0.15 + skillRatio * 0.7, 0.85);
+  // Шанс ничьей (от 25% до 15%)
+  const drawChance = Math.max(0.25 - skillRatio * 0.1, 0.15);
+  
+  const roll = Math.random();
+  let result;
+  if (roll < winChance) result = 'win';
+  else if (roll < winChance + drawChance) result = 'draw';
+  else result = 'lose';
+  
+  const multiplier = getMultiplier();
+  
+  // Награды
+  const rewards = {
+    win: { coins: Math.floor(randInt(500, 1500) * multiplier), fans: Math.floor(randInt(1000, 5000) * multiplier) },
+    draw: { coins: Math.floor(randInt(200, 500) * multiplier), fans: Math.floor(randInt(300, 1500) * multiplier) },
+    lose: { coins: Math.floor(randInt(50, 200) * multiplier), fans: Math.floor(randInt(50, 300) * multiplier) }
+  };
+  
+  return { result, ...rewards[result] };
+}
+
+function showMatchResult(result) {
+  const modal = document.getElementById('matchResultModal');
+  const card = document.getElementById('matchResultCard');
+  const icon = document.getElementById('resultIcon');
+  const iconInner = document.getElementById('resultIconInner');
+  const title = document.getElementById('resultTitle');
+  const text = document.getElementById('resultText');
+  const fansEl = document.getElementById('resultFans');
   const coinsEl = document.getElementById('resultCoins');
-  const viralBadge = document.getElementById('viralBadge');
-  const viewsGrowthEl = document.getElementById('viewsGrowth');
   
-  // Сброс значений
-  viewsEl.textContent = '0';
+  // Сброс
+  fansEl.textContent = '0';
   coinsEl.textContent = '$0';
-  viralBadge.classList.add('hidden');
   
-  // ВАЖНО: Очищаем старый интервал если он есть (это исправляет баг!)
-  if (viewsGrowthInterval) {
-    clearInterval(viewsGrowthInterval);
-    viewsGrowthInterval = null;
+  // Настройка в зависимости от результата
+  if (result.result === 'win') {
+    card.className = 'glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border-2 result-win';
+    icon.className = 'w-20 h-20 rounded-full bg-gradient-to-br from-football-green to-football-gold flex items-center justify-center glow-green';
+    iconInner.setAttribute('data-lucide', 'trophy');
+    title.textContent = 'ПОБЕДА!';
+    title.className = 'text-center text-xl font-bold mb-2 text-football-green';
+    text.textContent = 'Отличная игра! Ты показал мастерство!';
+  } else if (result.result === 'draw') {
+    card.className = 'glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border-2 result-draw';
+    icon.className = 'w-20 h-20 rounded-full bg-gradient-to-br from-football-blue to-blue-700 flex items-center justify-center glow-blue';
+    iconInner.setAttribute('data-lucide', 'handshake');
+    title.textContent = 'НИЧЬЯ';
+    title.className = 'text-center text-xl font-bold mb-2 text-football-blue';
+    text.textContent = 'Достойный результат. В следующий раз повезёт!';
+  } else {
+    card.className = 'glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border-2 result-lose';
+    icon.className = 'w-20 h-20 rounded-full bg-gradient-to-br from-football-red to-red-700 flex items-center justify-center';
+    iconInner.setAttribute('data-lucide', 'x-circle');
+    title.textContent = 'ПОРАЖЕНИЕ';
+    title.className = 'text-center text-xl font-bold mb-2 text-football-red';
+    text.textContent = 'Не расстраивайся! Тренируйся и возвращайся!';
   }
   
   // Показываем модалку
-  const modal = document.getElementById('resultModal');
   modal.classList.remove('hidden');
   modal.classList.add('flex');
   
-  // Анимация роста
-  const duration = 2500;
-  const steps = 50;
+  // Анимация роста чисел
+  const duration = 2000;
+  const steps = 40;
   const interval = duration / steps;
-  let currentViews = 0;
+  let currentFans = 0;
   let currentCoins = 0;
   let step = 0;
   
-  // Создаём новый интервал и сохраняем его
-  viewsGrowthInterval = setInterval(() => {
+  const growthInterval = setInterval(() => {
     step++;
-    currentViews += result.views / steps;
+    currentFans += result.fans / steps;
     currentCoins += result.coins / steps;
-    
-    viewsEl.textContent = formatNumber(Math.floor(currentViews));
+    fansEl.textContent = formatNumber(Math.floor(currentFans));
     coinsEl.textContent = formatCoins(Math.floor(currentCoins));
-    
-    const viewsPerSec = Math.floor(result.views / (duration / 1000));
-    viewsGrowthEl.textContent = `+${formatNumber(viewsPerSec)}/сек`;
-    
-    // ВАЖНО: Останавливаем интервал когда дошли до конца
     if (step >= steps) {
-      clearInterval(viewsGrowthInterval);
-      viewsGrowthInterval = null;
-      // Устанавливаем финальные точные значения
-      viewsEl.textContent = formatNumber(result.views);
+      clearInterval(growthInterval);
+      fansEl.textContent = formatNumber(result.fans);
       coinsEl.textContent = formatCoins(result.coins);
     }
   }, interval);
   
-  // Показываем вирусный бейдж если есть
-  if (result.isSuperViral) {
-    setTimeout(() => {
-      viralBadge.classList.remove('hidden');
-      viralBadge.innerHTML = '<div class="text-xs text-football-gold font-bold viral-badge">🔥 СУПЕР ВИРУСНЫЙ УСПЕХ! 🔥</div>';
-      if (window.haptic) tg.HapticFeedback.notificationOccurred('success');
-    }, 1000);
-  } else if (result.isViral) {
-    setTimeout(() => {
-      viralBadge.classList.remove('hidden');
-      viralBadge.innerHTML = '<div class="text-xs text-football-gold font-bold viral-badge">⭐ ВИРУСНЫЙ УСПЕХ!</div>';
-    }, 1000);
-  }
+  // Сохраняем для очистки
+  window.matchResultInterval = growthInterval;
+  
+  // Переинициализируем иконку
+  if (window.lucide) lucide.createIcons();
 }
 
-// ========== ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАКРЫТИЯ ==========
-function closeResult() {
-  // ВАЖНО: Гарантированно очищаем интервал при закрытии
-  if (viewsGrowthInterval) {
-    clearInterval(viewsGrowthInterval);
-    viewsGrowthInterval = null;
+function closeMatchResult() {
+  if (window.matchResultInterval) {
+    clearInterval(window.matchResultInterval);
+    window.matchResultInterval = null;
   }
-  
-  const modal = document.getElementById('resultModal');
+  const modal = document.getElementById('matchResultModal');
   modal.classList.add('hidden');
   modal.classList.remove('flex');
 }
@@ -981,7 +1155,6 @@ function showFloatingNumber(anchorEl, text) {
   floater.textContent = text;
   floater.style.left = (rect.left + rect.width / 2) + 'px';
   floater.style.top = rect.top + 'px';
-  floater.style.position = 'fixed';
   document.body.appendChild(floater);
   setTimeout(() => floater.remove(), 1500);
 }
@@ -1006,13 +1179,14 @@ function switchTab(tabName) {
     }
   });
   if (window.haptic) window.haptic('light');
-  if (tabName === 'shop') { renderHardware(); renderPlatforms(); }
+  if (tabName === 'shop') { renderSkills(); renderHardware(); renderPlatforms(); }
+  else if (tabName === 'match') { renderCharacteristics(); renderServices(); renderRecentMatches(); }
   else if (tabName === 'tasks') { renderTasks(); }
-  else if (tabName === 'studio') { renderRecentVideos(); }
 }
 
 function startEnergyRegen() {
-  setInterval(() => {
+  if (energyRegenInterval) clearInterval(energyRegenInterval);
+  energyRegenInterval = setInterval(() => {
     if (gameState.energy < CONFIG.maxEnergy) {
       gameState.energy = Math.min(CONFIG.maxEnergy, gameState.energy + 1);
       updateHeaderUI();
@@ -1021,7 +1195,8 @@ function startEnergyRegen() {
 }
 
 function startPassiveIncome() {
-  setInterval(() => {
+  if (passiveIncomeInterval) clearInterval(passiveIncomeInterval);
+  passiveIncomeInterval = setInterval(() => {
     const income = getPassiveIncome();
     if (income > 0) {
       gameState.coins += income;
@@ -1031,53 +1206,64 @@ function startPassiveIncome() {
 }
 
 function startAutoSave() {
-  setInterval(saveGame, CONFIG.autoSaveMs);
+  if (autoSaveInterval) clearInterval(autoSaveInterval);
+  autoSaveInterval = setInterval(saveGame, CONFIG.autoSaveMs);
 }
 
 function init() {
   initTelegram();
   loadGame();
-  renderTopics();
-  renderStyles();
-  renderRecentVideos();
+  
+  renderCharacteristics();
+  renderServices();
+  renderRecentMatches();
+  renderSkills();
   renderHardware();
   renderPlatforms();
   renderTasks();
   updateHeaderUI();
+  
   if (window.lucide) lucide.createIcons();
+  
   document.querySelectorAll('.nav-item').forEach(btn => {
     btn.addEventListener('click', () => switchTab(btn.dataset.tab));
   });
-  document.getElementById('publishBtn').addEventListener('click', createVideo);
-  document.getElementById('closeResultBtn').addEventListener('click', closeResult);
-  document.getElementById('resultModal').addEventListener('click', (e) => {
-    if (e.target.id === 'resultModal') closeResult();
+  document.getElementById('playMatchBtn').addEventListener('click', playMatch);
+  document.getElementById('closeResultBtn').addEventListener('click', closeMatchResult);
+  document.getElementById('matchResultModal').addEventListener('click', (e) => {
+    if (e.target.id === 'matchResultModal') closeMatchResult();
   });
+  
   window.addEventListener('beforeunload', saveGame);
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) saveGame();
   });
+  
   startEnergyRegen();
   startPassiveIncome();
   startAutoSave();
+  
   if (gameState.userId) {
     syncWithFirebase().then(() => {
       updateHeaderUI();
+      renderCharacteristics();
       listenToLeaderboard();
     });
   } else {
-    renderLeaderboard([], 0);
+    renderLeaderboard([], 1);
   }
-  console.log('%c Football Media Tycoon запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
+  
+  console.log('%c⚽ Football Tycoon запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
 // Переинициализация иконок
-const origRenderTasks = renderTasks;
+const origRenderCharacteristics = renderCharacteristics;
+const origRenderServices = renderServices;
+const origRenderRecentMatches = renderRecentMatches;
+const origRenderSkills = renderSkills;
 const origRenderHardware = renderHardware;
 const origRenderPlatforms = renderPlatforms;
-const origRenderTopics = renderTopics;
-const origRenderStyles = renderStyles;
-const origRenderRecent = renderRecentVideos;
+const origRenderTasks = renderTasks;
 
 function wrapWithIcons(fn) {
   return function(...args) {
@@ -1085,12 +1271,13 @@ function wrapWithIcons(fn) {
     if (window.lucide) lucide.createIcons();
   };
 }
-renderTasks = wrapWithIcons(origRenderTasks);
+renderCharacteristics = wrapWithIcons(origRenderCharacteristics);
+renderServices = wrapWithIcons(origRenderServices);
+renderRecentMatches = wrapWithIcons(origRenderRecentMatches);
+renderSkills = wrapWithIcons(origRenderSkills);
 renderHardware = wrapWithIcons(origRenderHardware);
 renderPlatforms = wrapWithIcons(origRenderPlatforms);
-renderTopics = wrapWithIcons(origRenderTopics);
-renderStyles = wrapWithIcons(origRenderStyles);
-renderRecentVideos = wrapWithIcons(origRenderRecent);
+renderTasks = wrapWithIcons(origRenderTasks);
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
