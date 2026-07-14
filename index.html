@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -57,6 +58,7 @@ tailwind.config = {
   .btn-play:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
   .glass-card { background: rgba(22, 27, 34, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(48, 54, 61, 0.6); }
   .energy-bar { background: linear-gradient(90deg, #10b981 0%, #34d399 100%); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); transition: width 0.3s ease; }
+  .energy-bar-over { background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%); box-shadow: 0 0 10px rgba(251, 191, 36, 0.5); }
   .floating-number { position: fixed; pointer-events: none; font-weight: 700; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6); animation: floatUp 1.5s ease-out forwards; z-index: 100; }
   .spinner { border: 3px solid rgba(16, 185, 129, 0.2); border-top-color: #10b981; border-radius: 50%; width: 48px; height: 48px; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -74,7 +76,6 @@ tailwind.config = {
   .achievement-locked { opacity: 0.4; filter: grayscale(1); }
   .achievement-unlocked { border-color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
   .buff-active { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border-color: #a855f7; }
-  .buff-expired { opacity: 0.5; }
   .minigame-btn { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)); border: 1px solid rgba(59, 130, 246, 0.4); }
   .minigame-btn:active:not(:disabled) { transform: scale(0.95); }
   .minigame-btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -90,6 +91,8 @@ tailwind.config = {
   .ball { position: absolute; width: 20px; height: 20px; background: #fff; border-radius: 50%; cursor: pointer; transition: all 0.2s; }
   .ball:hover { transform: scale(1.3); }
   .ball.saved { background: #10b981; }
+  .prize-badge { background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.2)); border: 1px solid #fbbf24; }
+  .countdown-timer { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1)); border: 1px solid #ef4444; }
 </style>
 </head>
 
@@ -135,7 +138,7 @@ tailwind.config = {
       <div class="bg-tg-bg/60 rounded-lg px-2 py-1.5 border border-tg-border">
         <div class="flex items-center justify-between text-[10px] text-tg-muted uppercase tracking-wider">
           <div class="flex items-center gap-1"><i data-lucide="battery" class="w-3 h-3 text-football-green"></i><span>Энергия</span></div>
-          <span id="energyText" class="text-football-green font-bold tabular-nums">100/100</span>
+          <span id="energyText" class="text-football-green font-bold tabular-nums">100</span>
         </div>
         <div class="mt-1 h-1 bg-tg-border rounded-full overflow-hidden">
           <div id="energyBar" class="energy-bar h-full" style="width: 100%"></div>
@@ -143,7 +146,6 @@ tailwind.config = {
       </div>
     </div>
 
-    <!-- Активные баффы -->
     <div id="activeBuffs" class="mt-2 flex gap-1 flex-wrap"></div>
 
     <div class="mt-2 flex items-center justify-between text-[11px] text-tg-muted">
@@ -152,14 +154,11 @@ tailwind.config = {
     </div>
   </header>
 
-  <!-- ОСНОВНОЙ КОНТЕНТ -->
   <main class="flex-1 relative pb-20">
 
     <!-- ВКЛАДКА: МАТЧ -->
     <section id="tab-match" class="tab-content tab-visible px-4 py-4">
-      <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-        <i data-lucide="flag" class="w-5 h-5 text-football-green"></i>Матч
-      </h2>
+      <h2 class="text-lg font-bold mb-3 flex items-center gap-2"><i data-lucide="flag" class="w-5 h-5 text-football-green"></i>Матч</h2>
 
       <div class="glass-card rounded-xl p-4 mb-3">
         <div class="flex items-center justify-between mb-3">
@@ -170,10 +169,9 @@ tailwind.config = {
       </div>
 
       <button id="playMatchBtn" class="btn-play press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 mb-3">
-        <i data-lucide="play" class="w-5 h-5"></i><span>Сыграть матч</span><span class="ml-1 text-xs opacity-80">(−50 ⚡)</span>
+        <i data-lucide="play" class="w-5 h-5"></i><span>Сыграть матч</span><span class="ml-1 text-xs opacity-80">(−50 )</span>
       </button>
 
-      <!-- Услуги (временные баффы) -->
       <div class="glass-card rounded-xl p-4 mb-4">
         <h3 class="text-sm font-bold flex items-center gap-2 mb-3"><i data-lucide="zap" class="w-4 h-4 text-football-purple"></i>Баффы (на 1 час)</h3>
         <div id="servicesList" class="grid grid-cols-2 gap-2"></div>
@@ -222,9 +220,7 @@ tailwind.config = {
 
     <!-- ВКЛАДКА: МИНИ-ИГРЫ -->
     <section id="tab-minigames" class="tab-content tab-hidden px-4 py-4">
-      <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-        <i data-lucide="gamepad-2" class="w-5 h-5 text-football-blue"></i>Мини-игры
-      </h2>
+      <h2 class="text-lg font-bold mb-3 flex items-center gap-2"><i data-lucide="gamepad-2" class="w-5 h-5 text-football-blue"></i>Мини-игры</h2>
 
       <div class="glass-card rounded-xl p-4 mb-4">
         <div class="text-center">
@@ -234,12 +230,9 @@ tailwind.config = {
       </div>
 
       <div class="space-y-3">
-        <!-- Пенальти -->
         <div class="glass-card rounded-xl p-4">
           <div class="flex items-center gap-3 mb-3">
-            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-football-red to-red-700 flex items-center justify-center">
-              <i data-lucide="target" class="w-6 h-6 text-white"></i>
-            </div>
+            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-football-red to-red-700 flex items-center justify-center"><i data-lucide="target" class="w-6 h-6 text-white"></i></div>
             <div class="flex-1">
               <div class="font-bold text-sm">Пенальти</div>
               <div class="text-[11px] text-tg-muted">Попади в цель 5 раз</div>
@@ -249,12 +242,9 @@ tailwind.config = {
           <button id="penaltyBtn" class="minigame-btn press-effect w-full py-3 rounded-lg text-football-blue font-bold text-sm">Играть</button>
         </div>
 
-        <!-- Дриблинг -->
         <div class="glass-card rounded-xl p-4">
           <div class="flex items-center gap-3 mb-3">
-            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-football-green to-football-dark flex items-center justify-center">
-              <i data-lucide="zap" class="w-6 h-6 text-white"></i>
-            </div>
+            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-football-green to-football-dark flex items-center justify-center"><i data-lucide="zap" class="w-6 h-6 text-white"></i></div>
             <div class="flex-1">
               <div class="font-bold text-sm">Дриблинг</div>
               <div class="text-[11px] text-tg-muted">Обойди 10 конусов</div>
@@ -264,12 +254,9 @@ tailwind.config = {
           <button id="dribblingBtn" class="minigame-btn press-effect w-full py-3 rounded-lg text-football-blue font-bold text-sm">Играть</button>
         </div>
 
-        <!-- Вратарь -->
         <div class="glass-card rounded-xl p-4">
           <div class="flex items-center gap-3 mb-3">
-            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-football-gold to-yellow-600 flex items-center justify-center">
-              <i data-lucide="shield" class="w-6 h-6 text-white"></i>
-            </div>
+            <div class="w-12 h-12 rounded-lg bg-gradient-to-br from-football-gold to-yellow-600 flex items-center justify-center"><i data-lucide="shield" class="w-6 h-6 text-white"></i></div>
             <div class="flex-1">
               <div class="font-bold text-sm">Вратарь</div>
               <div class="text-[11px] text-tg-muted">Отбей 5 мячей</div>
@@ -280,16 +267,41 @@ tailwind.config = {
         </div>
       </div>
 
-      <!-- Кулдаун -->
       <div id="minigameCooldown" class="hidden mt-4 glass-card rounded-xl p-4 text-center">
         <div class="text-xs text-tg-muted mb-1">Следующая игра через:</div>
         <div id="cooldownTimer" class="text-2xl font-bold text-football-gold">5:00</div>
       </div>
     </section>
 
-    <!-- ВКЛАДКА: ТОП -->
+    <!-- ВКЛАДКА: ТОП (ИСПРАВЛЕНО: добавлены призы и таймер) -->
     <section id="tab-leaderboard" class="tab-content tab-hidden px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2"><i data-lucide="trophy" class="w-5 h-5 text-football-gold"></i>Топ игроков</h2>
+
+      <!-- Призовой фонд -->
+      <div class="glass-card rounded-xl p-4 mb-4 border border-football-gold/30">
+        <div class="text-center mb-3">
+          <div class="text-xs text-tg-muted mb-1"> Призовой фонд сезона</div>
+          <div class="text-lg font-bold text-football-gold">700 ₽ разыгрывается</div>
+        </div>
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="prize-badge rounded-lg p-2 text-center">
+            <div class="text-[10px] text-tg-muted">1 место</div>
+            <div class="text-sm font-bold text-football-gold">200 ₽</div>
+          </div>
+          <div class="prize-badge rounded-lg p-2 text-center">
+            <div class="text-[10px] text-tg-muted">2 место</div>
+            <div class="text-sm font-bold text-football-gold">150 ₽</div>
+          </div>
+          <div class="prize-badge rounded-lg p-2 text-center">
+            <div class="text-[10px] text-tg-muted">3 место</div>
+            <div class="text-sm font-bold text-football-gold">100 ₽</div>
+          </div>
+        </div>
+        <div class="countdown-timer rounded-lg p-2 text-center">
+          <div class="text-[10px] text-tg-muted">До конца сезона:</div>
+          <div id="seasonTimer" class="text-lg font-bold text-football-red tabular-nums">7д 00:00:00</div>
+        </div>
+      </div>
 
       <div class="glass-card rounded-xl p-4 mb-4">
         <div class="text-center mb-4">
@@ -313,9 +325,7 @@ tailwind.config = {
 
     <!-- ВКЛАДКА: ДОСТИЖЕНИЯ -->
     <section id="tab-achievements" class="tab-content tab-hidden px-4 py-4">
-      <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
-        <i data-lucide="award" class="w-5 h-5 text-football-gold"></i>Достижения
-      </h2>
+      <h2 class="text-lg font-bold mb-3 flex items-center gap-2"><i data-lucide="award" class="w-5 h-5 text-football-gold"></i>Достижения</h2>
 
       <div class="glass-card rounded-xl p-4 mb-4">
         <div class="text-center">
@@ -332,7 +342,6 @@ tailwind.config = {
 
   </main>
 
-  <!-- НАВИГАЦИЯ -->
   <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] glass-card border-t border-tg-border z-30">
     <div class="grid grid-cols-5">
       <button data-tab="match" class="nav-item nav-item-active press-effect relative py-2.5 flex flex-col items-center gap-0.5 transition-colors">
@@ -353,7 +362,7 @@ tailwind.config = {
     </div>
   </nav>
 
-  <!-- МОДАЛКА: РЕЗУЛЬТАТ МАТЧА -->
+  <!-- МОДАЛКИ -->
   <div id="matchResultModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div id="matchResultCard" class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border-2">
       <div class="flex justify-center mb-4">
@@ -378,7 +387,6 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- МОДАЛКА: ИДЁТ МАТЧ -->
   <div id="playingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-8 text-center animate-fade-in">
       <div class="spinner mx-auto mb-4"></div>
@@ -387,7 +395,6 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- МОДАЛКА: ЕЖЕДНЕВНЫЕ НАГРАДЫ -->
   <div id="dailyModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-slide-up border border-football-gold/30">
       <div class="flex justify-center mb-3">
@@ -406,7 +413,6 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- МОДАЛКА: ОФФЛАЙН ПРОГРЕСС -->
   <div id="offlineModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border border-football-green/30">
       <div class="flex justify-center mb-4">
@@ -425,7 +431,6 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- МОДАЛКА: МИНИ-ИГРА ПЕНАЛЬТИ -->
   <div id="penaltyModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border border-football-red/30">
       <h3 class="text-center text-lg font-bold mb-2">Пенальти</h3>
@@ -436,7 +441,6 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- МОДАЛКА: МИНИ-ИГРА ДРИБЛИНГ -->
   <div id="dribblingModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border border-football-green/30">
       <h3 class="text-center text-lg font-bold mb-2">Дриблинг</h3>
@@ -447,7 +451,6 @@ tailwind.config = {
     </div>
   </div>
 
-  <!-- МОДАЛКА: МИНИ-ИГРА ВРАТАРЬ -->
   <div id="goalkeeperModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border border-football-gold/30">
       <h3 class="text-center text-lg font-bold mb-2">Вратарь</h3>
@@ -484,16 +487,46 @@ try {
 // КОНФИГУРАЦИЯ
 const CONFIG = {
   matchCost: 50,
-  maxEnergy: 100,
+  baseMaxEnergy: 100, // Базовый максимум для регенерации
   energyRegenMs: 3000,
   matchDurationMs: 2500,
   passiveIncomeMs: 1000,
   autoSaveMs: 5000,
   prestigeThreshold: 100000,
   offlineMaxHours: 8,
-  buffDurationMs: 3600000, // 1 час
-  minigameCooldownMs: 300000 // 5 минут
+  buffDurationMs: 3600000,
+  minigameCooldownMs: 300000,
+  seasonDurationMs: 7 * 24 * 60 * 60 * 1000 // 7 дней
 };
+
+// СЕЗОН (начало 7 дней назад от первого запуска)
+let seasonStartDate = null;
+function getSeasonStart() {
+  if (!seasonStartDate) {
+    const saved = localStorage.getItem('season_start');
+    if (saved) {
+      seasonStartDate = parseInt(saved);
+    } else {
+      seasonStartDate = Date.now() - (CONFIG.seasonDurationMs * 0.5); // Начинаем с середины сезона для демо
+      localStorage.setItem('season_start', seasonStartDate.toString());
+    }
+  }
+  return seasonStartDate;
+}
+
+function getSeasonTimeLeft() {
+  const start = getSeasonStart();
+  const end = start + CONFIG.seasonDurationMs;
+  return Math.max(0, end - Date.now());
+}
+
+function formatTimeLeft(ms) {
+  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
+  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+  return `${days}д ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+}
 
 // ЛИГИ
 const LEAGUES = [
@@ -516,7 +549,6 @@ const CHARACTERISTICS = [
   { id: 'speed', name: 'Скорость', icon: 'gauge', baseCost: 350 }
 ];
 
-// Услуги = временные баффы (ИСПРАВЛЕНО: питание и массаж теперь дают баффы)
 const SERVICES = [
   { id: 'gym', name: 'Тренажёрный зал', icon: 'dumbbell', cost: 20, buff: { stat: 'strength', percent: 0.2 }, color: 'football-red', desc: '+20% Сила (1ч)' },
   { id: 'boots', name: 'Новые бутсы', icon: 'footprints', cost: 20, buff: { stat: 'dribbling', percent: 0.15 }, color: 'football-blue', desc: '+15% Дрибл. (1ч)' },
@@ -532,30 +564,52 @@ const HARDWARE = [
   { id: 'agency', name: 'Агентство', icon: 'building', baseCost: 100000, income: 1000, color: 'from-football-purple to-purple-700' }
 ];
 
-// Инфраструктура (дорогие цели)
+// ИНФРАСТРУКТУРА (ИЗМЕНЕНО: новые награды для академии и стадиона)
 const INFRASTRUCTURE = [
-  { id: 'stadium', name: 'Стадион', icon: 'building-2', levels: [
-    { cost: 100000, bonus: 0.1, desc: '+10% фанатов' },
-    { cost: 500000, bonus: 0.15, desc: '+15% фанатов' },
-    { cost: 2000000, bonus: 0.2, desc: '+20% фанатов' },
-    { cost: 10000000, bonus: 0.3, desc: '+30% фанатов' },
-    { cost: 50000000, bonus: 0.5, desc: '+50% фанатов' }
-  ]},
-  { id: 'academy', name: 'Академия', icon: 'graduation-cap', levels: [
-    { cost: 1000000, bonus: 1, desc: '+1 навык/час' },
-    { cost: 5000000, bonus: 2, desc: '+2 навыка/час' },
-    { cost: 25000000, bonus: 5, desc: '+5 навыков/час' }
-  ]},
-  { id: 'scouts', name: 'Скауты', icon: 'search', levels: [
-    { cost: 500000, bonus: 0.05, desc: '+5% к победе' },
-    { cost: 2000000, bonus: 0.1, desc: '+10% к победе' },
-    { cost: 10000000, bonus: 0.15, desc: '+15% к победе' }
-  ]},
-  { id: 'sponsors', name: 'Спонсоры', icon: 'briefcase', levels: [
-    { cost: 1000000, bonus: 500, desc: '+$500/сек' },
-    { cost: 5000000, bonus: 2000, desc: '+$2000/сек' },
-    { cost: 25000000, bonus: 10000, desc: '+$10000/сек' }
-  ]}
+  { 
+    id: 'stadium', 
+    name: 'Стадион', 
+    icon: 'building-2', 
+    desc: 'Увеличивает доход от матчей',
+    levels: [
+      { cost: 100000, bonus: 0.15, desc: '+15% монет от матчей' },
+      { cost: 500000, bonus: 0.25, desc: '+25% монет от матчей' },
+      { cost: 2000000, bonus: 0.4, desc: '+40% монет от матчей' },
+      { cost: 10000000, bonus: 0.6, desc: '+60% монет от матчей' },
+      { cost: 50000000, bonus: 1.0, desc: '+100% монет от матчей' }
+    ]
+  },
+  { 
+    id: 'academy', 
+    name: 'Академия', 
+    icon: 'graduation-cap',
+    desc: 'Улучшает навыки после матчей',
+    levels: [
+      { cost: 1000000, bonus: 1, desc: '+1 к случайному навыку после матча' },
+      { cost: 5000000, bonus: 2, desc: '+2 к случайному навыку после матча' },
+      { cost: 25000000, bonus: 5, desc: '+5 к случайному навыку после матча' }
+    ]
+  },
+  { 
+    id: 'scouts', 
+    name: 'Скауты', 
+    icon: 'search', 
+    levels: [
+      { cost: 500000, bonus: 0.05, desc: '+5% к победе' },
+      { cost: 2000000, bonus: 0.1, desc: '+10% к победе' },
+      { cost: 10000000, bonus: 0.15, desc: '+15% к победе' }
+    ]
+  },
+  { 
+    id: 'sponsors', 
+    name: 'Спонсоры', 
+    icon: 'briefcase', 
+    levels: [
+      { cost: 1000000, bonus: 500, desc: '+$500/сек' },
+      { cost: 5000000, bonus: 2000, desc: '+$2000/сек' },
+      { cost: 25000000, bonus: 10000, desc: '+$10000/сек' }
+    ]
+  }
 ];
 
 const ACHIEVEMENTS = [
@@ -600,7 +654,7 @@ const MATCH_COMMENTARIES = [
 
 // СОСТОЯНИЕ
 let gameState = {
-  coins: 100, fans: 0, totalFansEarned: 0, energy: CONFIG.maxEnergy,
+  coins: 100, fans: 0, totalFansEarned: 0, energy: CONFIG.baseMaxEnergy,
   characteristics: { stamina: 0, strength: 0, dribbling: 0, shotPower: 0, technique: 0, speed: 0 },
   hardware: { phone: 0, camera: 0, studio: 0, pro: 0, agency: 0 },
   infrastructure: { stadium: 0, academy: 0, scouts: 0, sponsors: 0 },
@@ -614,15 +668,14 @@ let gameState = {
   username: 'Player', userId: null, lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v7';
+const SAVE_KEY = 'football_tycoon_save_v8';
 let tg = null;
 let leaderboardUnsubscribe = null;
 let passiveIncomeInterval = null;
 let energyRegenInterval = null;
 let autoSaveInterval = null;
 let buffUpdateInterval = null;
-let academyInterval = null;
-let minigameCooldownInterval = null;
+let seasonTimerInterval = null;
 
 // TELEGRAM
 function initTelegram() {
@@ -650,6 +703,8 @@ async function syncWithFirebase() {
       gameState.coins = Math.max(gameState.coins, data.coins || 0);
       gameState.fans = Math.max(gameState.fans, data.fans || 0);
       gameState.totalFansEarned = Math.max(gameState.totalFansEarned, data.totalFansEarned || 0);
+      // ИСПРАВЛЕНО: энергия может быть больше 100
+      gameState.energy = Math.max(gameState.energy, data.energy || CONFIG.baseMaxEnergy);
       if (data.characteristics) for (let key in gameState.characteristics) gameState.characteristics[key] = Math.max(gameState.characteristics[key], data.characteristics[key] || 0);
       if (data.hardware) for (let key in gameState.hardware) gameState.hardware[key] = Math.max(gameState.hardware[key], data.hardware[key] || 0);
       if (data.infrastructure) for (let key in gameState.infrastructure) gameState.infrastructure[key] = Math.max(gameState.infrastructure[key], data.infrastructure[key] || 0);
@@ -663,7 +718,7 @@ async function syncWithFirebase() {
       gameState.stats.draws = Math.max(gameState.stats.draws, data.stats?.draws || 0);
       gameState.stats.losses = Math.max(gameState.stats.losses, data.stats?.losses || 0);
     } else {
-      await playerRef.set({ username: gameState.username, coins: gameState.coins, fans: gameState.fans, totalFansEarned: gameState.totalFansEarned, characteristics: { ...gameState.characteristics }, hardware: { ...gameState.hardware }, infrastructure: { ...gameState.infrastructure }, leagueLevel: gameState.leagueLevel, prestige: gameState.prestige, completedAchievements: gameState.completedAchievements, dailyStreak: gameState.dailyStreak, lastDailyReward: gameState.lastDailyReward, stats: { matchesPlayed: gameState.stats.matchesPlayed, wins: gameState.stats.wins, draws: gameState.stats.draws, losses: gameState.stats.losses }, lastOnline: Date.now() });
+      await playerRef.set({ username: gameState.username, coins: gameState.coins, fans: gameState.fans, totalFansEarned: gameState.totalFansEarned, energy: gameState.energy, characteristics: { ...gameState.characteristics }, hardware: { ...gameState.hardware }, infrastructure: { ...gameState.infrastructure }, leagueLevel: gameState.leagueLevel, prestige: gameState.prestige, completedAchievements: gameState.completedAchievements, dailyStreak: gameState.dailyStreak, lastDailyReward: gameState.lastDailyReward, stats: { matchesPlayed: gameState.stats.matchesPlayed, wins: gameState.stats.wins, draws: gameState.stats.draws, losses: gameState.stats.losses }, lastOnline: Date.now() });
     }
     gameState.lastSync = Date.now();
   } catch (error) { console.error('Sync error:', error); }
@@ -672,7 +727,7 @@ async function syncWithFirebase() {
 async function updatePlayerData() {
   if (!gameState.userId || !firebaseReady || Date.now() - gameState.lastSync < 5000) return;
   try {
-    await database.ref('players/' + gameState.userId).update({ username: gameState.username, coins: gameState.coins, fans: gameState.fans, totalFansEarned: gameState.totalFansEarned, characteristics: { ...gameState.characteristics }, hardware: { ...gameState.hardware }, infrastructure: { ...gameState.infrastructure }, leagueLevel: gameState.leagueLevel, prestige: gameState.prestige, completedAchievements: gameState.completedAchievements, dailyStreak: gameState.dailyStreak, lastDailyReward: gameState.lastDailyReward, stats: { matchesPlayed: gameState.stats.matchesPlayed, wins: gameState.stats.wins, draws: gameState.stats.draws, losses: gameState.stats.losses }, lastOnline: Date.now() });
+    await database.ref('players/' + gameState.userId).update({ username: gameState.username, coins: gameState.coins, fans: gameState.fans, totalFansEarned: gameState.totalFansEarned, energy: gameState.energy, characteristics: { ...gameState.characteristics }, hardware: { ...gameState.hardware }, infrastructure: { ...gameState.infrastructure }, leagueLevel: gameState.leagueLevel, prestige: gameState.prestige, completedAchievements: gameState.completedAchievements, dailyStreak: gameState.dailyStreak, lastDailyReward: gameState.lastDailyReward, stats: { matchesPlayed: gameState.stats.matchesPlayed, wins: gameState.stats.wins, draws: gameState.stats.draws, losses: gameState.stats.losses }, lastOnline: Date.now() });
     gameState.lastSync = Date.now();
   } catch (error) { console.error('Update error:', error); }
 }
@@ -740,9 +795,7 @@ function getBuffMultiplier(statId) {
   const now = Date.now();
   for (let buffId in gameState.activeBuffs) {
     const buff = gameState.activeBuffs[buffId];
-    if (buff.expiresAt > now && buff.stat === statId) {
-      multiplier += buff.percent;
-    }
+    if (buff.expiresAt > now && buff.stat === statId) multiplier += buff.percent;
   }
   return multiplier;
 }
@@ -753,6 +806,7 @@ function getScoutBonus() {
   return INFRASTRUCTURE.find(i => i.id === 'scouts').levels[level - 1].bonus;
 }
 
+// ИЗМЕНЕНО: стадион теперь дает бонус к монетам от матчей
 function getStadiumBonus() {
   const level = gameState.infrastructure.stadium || 0;
   if (level === 0) return 1;
@@ -763,6 +817,13 @@ function getSponsorIncome() {
   const level = gameState.infrastructure.sponsors || 0;
   if (level === 0) return 0;
   return INFRASTRUCTURE.find(i => i.id === 'sponsors').levels[level - 1].bonus;
+}
+
+// ИЗМЕНЕНО: академия теперь дает бонус после матча
+function getAcademyBonus() {
+  const level = gameState.infrastructure.academy || 0;
+  if (level === 0) return 0;
+  return INFRASTRUCTURE.find(i => i.id === 'academy').levels[level - 1].bonus;
 }
 
 function getSkillCost(skillId, currentLevel) {
@@ -789,22 +850,35 @@ function getPassiveIncome() {
   return Math.floor(total * getPrestigeMultiplier() * 0.5);
 }
 
-// Проверка активного баффа (ИСПРАВЛЕНО: добавлена проверка кулдауна баффов)
 function hasActiveBuff(serviceId) {
   const now = Date.now();
   for (let buffId in gameState.activeBuffs) {
-    if (buffId.startsWith(serviceId + '_') && gameState.activeBuffs[buffId].expiresAt > now) {
-      return true;
-    }
+    if (buffId.startsWith(serviceId + '_') && gameState.activeBuffs[buffId].expiresAt > now) return true;
   }
   return false;
 }
 
+// ИСПРАВЛЕНО: энергия может превышать 100
 function updateHeaderUI() {
   document.getElementById('coinsDisplay').textContent = formatCoins(gameState.coins);
   document.getElementById('fansDisplay').textContent = formatNumber(gameState.fans);
-  document.getElementById('energyText').textContent = `${Math.floor(gameState.energy)}/${CONFIG.maxEnergy}`;
-  document.getElementById('energyBar').style.width = (gameState.energy / CONFIG.maxEnergy * 100) + '%';
+  
+  // Показываем энергию (может быть больше 100)
+  const energyEl = document.getElementById('energyText');
+  const energyBar = document.getElementById('energyBar');
+  energyEl.textContent = Math.floor(gameState.energy);
+  
+  // Если энергия больше базового максимума, показываем золотой цвет
+  if (gameState.energy > CONFIG.baseMaxEnergy) {
+    energyEl.className = 'text-football-gold font-bold tabular-nums';
+    energyBar.className = 'energy-bar-over h-full';
+    energyBar.style.width = '100%';
+  } else {
+    energyEl.className = 'text-football-green font-bold tabular-nums';
+    energyBar.className = 'energy-bar h-full';
+    energyBar.style.width = (gameState.energy / CONFIG.baseMaxEnergy * 100) + '%';
+  }
+  
   document.getElementById('passiveIncomeDisplay').textContent = formatCoins(getPassiveIncome()) + '/сек';
   document.getElementById('playMatchBtn').disabled = gameState.energy < CONFIG.matchCost;
   document.getElementById('prestigeDisplay').textContent = gameState.prestige;
@@ -832,6 +906,18 @@ function updateHeaderUI() {
   else dailyBadge.classList.add('hidden');
 }
 
+// ИЗМЕНЕНО: регенерация энергии останавливается на 100, но можно получить больше через баффы/мини-игры
+function startEnergyRegen() {
+  if (energyRegenInterval) clearInterval(energyRegenInterval);
+  energyRegenInterval = setInterval(() => {
+    // Регенерация только если энергия меньше базового максимума (100)
+    if (gameState.energy < CONFIG.baseMaxEnergy) {
+      gameState.energy = Math.min(CONFIG.baseMaxEnergy, gameState.energy + 1);
+      updateHeaderUI();
+    }
+  }, CONFIG.energyRegenMs);
+}
+
 function canClaimDailyReward() { const now = Date.now(); const lastClaim = gameState.lastDailyReward || 0; return (now - lastClaim) >= 24 * 60 * 60 * 1000; }
 function getDailyRewardAmount(day) { const rewards = [100, 250, 500, 1000, 2000, 5000, 10000]; return rewards[(day - 1) % 7]; }
 
@@ -849,7 +935,6 @@ function renderCharacteristics() {
   }).join('');
 }
 
-// ИСПРАВЛЕНО: добавлена проверка активного баффа
 function renderServices() {
   const container = document.getElementById('servicesList');
   container.innerHTML = SERVICES.map(service => {
@@ -873,19 +958,55 @@ function renderRecentMatches() {
   }).join('');
 }
 
+// ИЗМЕНЕНО: топ с призами и таймером
 function renderLeaderboard(players, myRank) {
   const container = document.getElementById('leaderboardList');
   document.getElementById('myRank').textContent = '#' + Math.min(myRank, 999);
   document.getElementById('myFans').textContent = formatNumber(gameState.fans) + ' фанатов';
   document.getElementById('myCoins').textContent = formatCoins(gameState.coins);
-  if (!players || players.length === 0) { container.innerHTML = '<div class="p-8 text-center text-tg-muted text-sm">Пока нет игроков. Будь первым!</div>'; return; }
+  
+  if (!players || players.length === 0) { 
+    container.innerHTML = '<div class="p-8 text-center text-tg-muted text-sm">Пока нет игроков. Будь первым!</div>'; 
+    return; 
+  }
+  
+  // Призы для топ-3
+  const prizes = { 1: '200 ₽', 2: '150 ₽', 3: '100 ₽' };
+  
   container.innerHTML = players.map((player, index) => {
     const rank = index + 1;
     const isMe = player.userId === gameState.userId;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'bg-tg-bg/40';
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
-    return `<div class="flex items-center gap-3 p-3 ${isMe ? 'bg-football-green/10 border-l-2 border-football-green' : ''}"><div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm flex-shrink-0">${medal}</div><div class="flex-1 min-w-0"><div class="font-bold text-sm truncate ${isMe ? 'text-football-green' : ''}">${player.username} ${isMe ? '(ты)' : ''}</div><div class="text-[11px] text-tg-muted">${formatNumber(player.coins)} монет</div></div><div class="text-right"><div class="text-sm font-bold text-football-blue tabular-nums">${formatNumber(player.fans)}</div><div class="text-[10px] text-tg-muted">фанатов</div></div></div>`;
+    const medal = rank === 1 ? '' : rank === 2 ? '' : rank === 3 ? '🥉' : `#${rank}`;
+    const prize = prizes[rank] || '';
+    
+    return `<div class="flex items-center gap-3 p-3 ${isMe ? 'bg-football-green/10 border-l-2 border-football-green' : ''}">
+      <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm flex-shrink-0">${medal}</div>
+      <div class="flex-1 min-w-0">
+        <div class="font-bold text-sm truncate ${isMe ? 'text-football-green' : ''}">${player.username} ${isMe ? '(ты)' : ''}</div>
+        <div class="text-[11px] text-tg-muted">${formatNumber(player.coins)} монет</div>
+        ${prize ? `<div class="text-[10px] text-football-gold font-bold mt-0.5"> Приз: ${prize}</div>` : ''}
+      </div>
+      <div class="text-right">
+        <div class="text-sm font-bold text-football-blue tabular-nums">${formatNumber(player.fans)}</div>
+        <div class="text-[10px] text-tg-muted">фанатов</div>
+      </div>
+    </div>`;
   }).join('');
+}
+
+function updateSeasonTimer() {
+  const timeLeft = getSeasonTimeLeft();
+  const timerEl = document.getElementById('seasonTimer');
+  if (timerEl) {
+    timerEl.textContent = formatTimeLeft(timeLeft);
+    
+    // Если сезон закончился
+    if (timeLeft <= 0) {
+      timerEl.textContent = 'Сезон завершён!';
+      timerEl.className = 'text-lg font-bold text-football-gold tabular-nums';
+    }
+  }
 }
 
 function renderSkills() {
@@ -926,21 +1047,20 @@ function renderPlatforms() {
   }).join('');
 }
 
-// ИСПРАВЛЕНО: инфраструктура теперь работает корректно
+// ИЗМЕНЕНО: инфраструктура с новыми описаниями
 function renderInfrastructure() {
   const container = document.getElementById('infrastructureList');
   container.innerHTML = INFRASTRUCTURE.map(infra => {
     const level = gameState.infrastructure[infra.id] || 0;
     const maxLevel = infra.levels.length;
     if (level >= maxLevel) {
-      return `<div class="glass-card rounded-xl p-3 flex items-center gap-3"><div class="w-11 h-11 rounded-lg bg-gradient-to-br from-football-gold to-yellow-600 flex items-center justify-center flex-shrink-0"><i data-lucide="${infra.icon}" class="w-5 h-5 text-white"></i></div><div class="flex-1 min-w-0"><div class="font-bold text-sm">${infra.name}</div><div class="text-[11px] text-football-gold">МАКС (ур. ${level})</div></div><span class="text-[10px] text-football-gold px-2 py-1.5 font-bold">МАКС</span></div>`;
+      return `<div class="glass-card rounded-xl p-3 flex items-center gap-3"><div class="w-11 h-11 rounded-lg bg-gradient-to-br from-football-gold to-yellow-600 flex items-center justify-center flex-shrink-0"><i data-lucide="${infra.icon}" class="w-5 h-5 text-white"></i></div><div class="flex-1 min-w-0"><div class="font-bold text-sm">${infra.name}</div><div class="text-[11px] text-tg-muted">${infra.desc}</div><div class="text-[10px] text-football-gold mt-0.5">МАКС (ур. ${level})</div></div><span class="text-[10px] text-football-gold px-2 py-1.5 font-bold">МАКС</span></div>`;
     }
     const nextLevel = infra.levels[level];
     const canAfford = gameState.coins >= nextLevel.cost;
-    return `<div class="glass-card rounded-xl p-3 flex items-center gap-3"><div class="w-11 h-11 rounded-lg bg-gradient-to-br from-football-purple to-purple-700 flex items-center justify-center flex-shrink-0"><i data-lucide="${infra.icon}" class="w-5 h-5 text-white"></i></div><div class="flex-1 min-w-0"><div class="font-bold text-sm">${infra.name} <span class="text-[10px] text-tg-muted">(ур. ${level}/${maxLevel})</span></div><div class="text-[11px] text-tg-muted">${nextLevel.desc}</div></div><button data-infra="${infra.id}" class="buy-infra-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${canAfford ? 'bg-football-purple/20 text-football-purple border border-football-purple/40 hover:bg-football-purple/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>${formatCoins(nextLevel.cost)}</button></div>`;
+    return `<div class="glass-card rounded-xl p-3 flex items-center gap-3"><div class="w-11 h-11 rounded-lg bg-gradient-to-br from-football-purple to-purple-700 flex items-center justify-center flex-shrink-0"><i data-lucide="${infra.icon}" class="w-5 h-5 text-white"></i></div><div class="flex-1 min-w-0"><div class="font-bold text-sm">${infra.name} <span class="text-[10px] text-tg-muted">(ур. ${level}/${maxLevel})</span></div><div class="text-[11px] text-tg-muted">${infra.desc}</div><div class="text-[10px] text-football-purple mt-0.5">След.: ${nextLevel.desc}</div></div><button data-infra="${infra.id}" class="buy-infra-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${canAfford ? 'bg-football-purple/20 text-football-purple border border-football-purple/40 hover:bg-football-purple/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>${formatCoins(nextLevel.cost)}</button></div>`;
   }).join('');
   
-  // ИСПРАВЛЕНО: добавлена правильная привязка обработчиков
   setTimeout(() => {
     container.querySelectorAll('.buy-infra-btn').forEach(btn => {
       btn.addEventListener('click', () => buyInfrastructure(btn.dataset.infra));
@@ -1001,7 +1121,6 @@ function buyHardware(hwId) {
   if (window.haptic) window.haptic('light');
 }
 
-// ИСПРАВЛЕНО: инфраструктура теперь работает
 function buyInfrastructure(infraId) {
   const infra = INFRASTRUCTURE.find(i => i.id === infraId);
   if (!infra) return;
@@ -1018,21 +1137,15 @@ function buyInfrastructure(infraId) {
   showFloatingNumber(document.getElementById('infrastructureList'), `+1 ${infra.name}!`);
 }
 
-// ИСПРАВЛЕНО: баффы теперь не дают энергию, и есть проверка кулдауна
 function useService(serviceId) {
   const service = SERVICES.find(s => s.id === serviceId);
   if (!service) return;
   if (gameState.energy < service.cost) return;
-  
-  // Проверка активного баффа
   if (hasActiveBuff(serviceId)) {
     alert('Этот бафф уже активен! Подожди окончания.');
     return;
   }
-  
   gameState.energy -= service.cost;
-  
-  // Создаём бафф
   const buffId = service.id + '_' + Date.now();
   gameState.activeBuffs[buffId] = {
     name: service.name,
@@ -1040,7 +1153,6 @@ function useService(serviceId) {
     percent: service.buff.percent,
     expiresAt: Date.now() + CONFIG.buffDurationMs
   };
-  
   saveGame();
   renderServices();
   renderCharacteristics();
@@ -1049,6 +1161,7 @@ function useService(serviceId) {
   if (window.haptic) window.haptic('light');
 }
 
+// ИЗМЕНЕНО: матч теперь дает бонус от стадиона и академии
 async function playMatch() {
   if (gameState.energy < CONFIG.matchCost) return;
   gameState.energy -= CONFIG.matchCost;
@@ -1078,6 +1191,16 @@ async function playMatch() {
   gameState.stats.recentMatches.unshift({ result: result.result, fans: result.fans, coins: result.coins, time: Date.now() });
   if (gameState.stats.recentMatches.length > 10) gameState.stats.recentMatches.pop();
 
+  // ИЗМЕНЕНО: академия дает бонус к навыкам после матча
+  const academyBonus = getAcademyBonus();
+  if (academyBonus > 0) {
+    const skills = Object.keys(gameState.characteristics);
+    for (let i = 0; i < academyBonus; i++) {
+      const randomSkill = skills[randInt(0, skills.length - 1)];
+      gameState.characteristics[randomSkill] = Math.min(100, gameState.characteristics[randomSkill] + 1);
+    }
+  }
+
   let randomEvent = null;
   if (Math.random() < 0.20) {
     randomEvent = RANDOM_EVENTS[randInt(0, RANDOM_EVENTS.length - 1)];
@@ -1091,7 +1214,7 @@ async function playMatch() {
   renderRecentMatches();
   renderCharacteristics();
   checkAchievements();
-  showMatchResult(result, randomEvent);
+  showMatchResult(result, randomEvent, academyBonus);
   if (window.hapticSuccess) window.hapticSuccess();
 }
 
@@ -1110,7 +1233,7 @@ function calculateMatchResult() {
 
   const league = getCurrentLeague();
   const prestigeMult = getPrestigeMultiplier();
-  const stadiumMult = getStadiumBonus();
+  const stadiumMult = getStadiumBonus(); // Теперь бонус к монетам
   const multiplier = league.multiplier * prestigeMult * stadiumMult;
 
   const rewards = {
@@ -1158,7 +1281,8 @@ function checkAchievements() {
   }
 }
 
-function showMatchResult(result, randomEvent) {
+// ИЗМЕНЕНО: показ бонуса от академии
+function showMatchResult(result, randomEvent, academyBonus = 0) {
   const modal = document.getElementById('matchResultModal');
   const card = document.getElementById('matchResultCard');
   const icon = document.getElementById('resultIcon');
@@ -1194,6 +1318,11 @@ function showMatchResult(result, randomEvent) {
     title.textContent = 'ПОРАЖЕНИЕ';
     title.className = 'text-center text-xl font-bold mb-2 text-football-red';
     text.textContent = 'Не расстраивайся! Тренируйся и возвращайся!';
+  }
+
+  // Показываем бонус от академии
+  if (academyBonus > 0) {
+    text.textContent += ` (Академия: +${academyBonus} к навыкам)`;
   }
 
   if (randomEvent) {
@@ -1237,7 +1366,6 @@ function closeMatchResult() {
   modal.classList.remove('flex');
 }
 
-// ЕЖЕДНЕВНЫЕ НАГРАДЫ
 function openDailyReward() {
   if (!canClaimDailyReward()) {
     const lastClaim = gameState.lastDailyReward || 0;
@@ -1280,7 +1408,6 @@ function claimDailyReward() {
   if (gameState.dailyStreak % 7 === 0) setTimeout(() => alert('🎉 Недельная серия завершена! Бонус получен!'), 500);
 }
 
-// ОФФЛАЙН ПРОГРЕСС
 function calculateOfflineProgress() {
   const now = Date.now();
   const lastSave = gameState.lastSaveTime || now;
@@ -1345,16 +1472,11 @@ function startMinigame(type) {
     return;
   }
   
-  if (type === 'penalty') {
-    startPenaltyGame();
-  } else if (type === 'dribbling') {
-    startDribblingGame();
-  } else if (type === 'goalkeeper') {
-    startGoalkeeperGame();
-  }
+  if (type === 'penalty') startPenaltyGame();
+  else if (type === 'dribbling') startDribblingGame();
+  else if (type === 'goalkeeper') startGoalkeeperGame();
 }
 
-// ПЕНАЛЬТИ
 function startPenaltyGame() {
   const modal = document.getElementById('penaltyModal');
   const zone = document.getElementById('penaltyZone');
@@ -1420,7 +1542,6 @@ function finishPenaltyGame(score) {
   }, 1000);
 }
 
-// ДРИБЛИНГ (ИСПРАВЛЕНО: добавлена полноценная мини-игра)
 function startDribblingGame() {
   const modal = document.getElementById('dribblingModal');
   const zone = document.getElementById('dribblingZone');
@@ -1486,7 +1607,6 @@ function finishDribblingGame(score) {
   }, 1000);
 }
 
-// ВРАТАРЬ (ИСПРАВЛЕНО: добавлена полноценная мини-игра)
 function startGoalkeeperGame() {
   const modal = document.getElementById('goalkeeperModal');
   const zone = document.getElementById('goalkeeperZone');
@@ -1552,8 +1672,10 @@ function finishGoalkeeperGame(score) {
   }, 1000);
 }
 
+// ИСПРАВЛЕНО: мини-игры могут давать энергию сверх 100
 function completeMinigame(energy, coins, message) {
-  gameState.energy = Math.min(CONFIG.maxEnergy, gameState.energy + energy);
+  // Энергия может превышать базовый максимум (100)
+  gameState.energy += energy;
   gameState.coins += coins;
   gameState.lastMinigameTime = Date.now();
   saveGame();
@@ -1587,17 +1709,8 @@ function switchTab(tabName) {
   if (tabName === 'shop') { renderSkills(); renderHardware(); renderPlatforms(); renderInfrastructure(); renderPrestige(); }
   else if (tabName === 'match') { renderCharacteristics(); renderServices(); renderRecentMatches(); }
   else if (tabName === 'minigames') { updateMinigameCooldown(); }
+  else if (tabName === 'leaderboard') { updateSeasonTimer(); }
   else if (tabName === 'achievements') { renderAchievements(); }
-}
-
-function startEnergyRegen() {
-  if (energyRegenInterval) clearInterval(energyRegenInterval);
-  energyRegenInterval = setInterval(() => {
-    if (gameState.energy < CONFIG.maxEnergy) {
-      gameState.energy = Math.min(CONFIG.maxEnergy, gameState.energy + 1);
-      updateHeaderUI();
-    }
-  }, CONFIG.energyRegenMs);
 }
 
 function startPassiveIncome() {
@@ -1621,23 +1734,14 @@ function startBuffUpdate() {
   buffUpdateInterval = setInterval(() => {
     updateHeaderUI();
     renderCharacteristics();
-    renderServices(); // Обновляем состояние кнопок баффов
+    renderServices();
   }, 1000);
 }
 
-function startAcademy() {
-  if (academyInterval) clearInterval(academyInterval);
-  academyInterval = setInterval(() => {
-    const level = gameState.infrastructure.academy || 0;
-    if (level > 0) {
-      const bonus = INFRASTRUCTURE.find(i => i.id === 'academy').levels[level - 1].bonus;
-      const skills = Object.keys(gameState.characteristics);
-      const randomSkill = skills[randInt(0, skills.length - 1)];
-      gameState.characteristics[randomSkill] = Math.min(100, gameState.characteristics[randomSkill] + bonus);
-      saveGame();
-      renderCharacteristics();
-    }
-  }, 3600000);
+function startSeasonTimer() {
+  if (seasonTimerInterval) clearInterval(seasonTimerInterval);
+  seasonTimerInterval = setInterval(updateSeasonTimer, 1000);
+  updateSeasonTimer();
 }
 
 function init() {
@@ -1679,7 +1783,7 @@ function init() {
   startPassiveIncome();
   startAutoSave();
   startBuffUpdate();
-  startAcademy();
+  startSeasonTimer();
   
   setInterval(updateMinigameCooldown, 1000);
   
@@ -1700,7 +1804,7 @@ function init() {
     renderLocalLeaderboard();
   }
   
-  console.log('%c⚽ Football Tycoon v7.1 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
+  console.log('%c⚽ Football Tycoon v8 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
 const origRenderCharacteristics = renderCharacteristics;
