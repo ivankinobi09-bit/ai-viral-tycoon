@@ -27,13 +27,15 @@
           'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
           'fade-in': 'fadeIn 0.3s ease-out',
           'float-up': 'floatUp 1.5s ease-out forwards',
-          'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
+          'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+          'shake': 'shake 0.5s ease-in-out'
         },
         keyframes: {
           slideUp: { '0%': { transform: 'translateY(30px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
           fadeIn: { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
           floatUp: { '0%': { transform: 'translateY(0)', opacity: '1' }, '100%': { transform: 'translateY(-60px)', opacity: '0' } },
-          bounceIn: { '0%': { transform: 'scale(0.3)', opacity: '0' }, '50%': { transform: 'scale(1.05)' }, '100%': { transform: 'scale(1)', opacity: '1' } }
+          bounceIn: { '0%': { transform: 'scale(0.3)', opacity: '0' }, '50%': { transform: 'scale(1.05)' }, '100%': { transform: 'scale(1)', opacity: '1' } },
+          shake: { '0%, 100%': { transform: 'translateX(0)' }, '25%': { transform: 'translateX(-5px)' }, '75%': { transform: 'translateX(5px)' } }
         }
       }
     }
@@ -52,11 +54,13 @@
   .tab-hidden { opacity: 0; pointer-events: none; position: absolute; transform: translateY(8px); }
   .tab-visible { opacity: 1; transform: translateY(0); }
   .glow-green { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+  .glow-gold { box-shadow: 0 0 20px rgba(251, 191, 36, 0.4); }
   .btn-play { background: linear-gradient(135deg, #10b981 0%, #059669 100%); transition: all 0.2s ease; }
   .btn-play:hover:not(:disabled) { box-shadow: 0 0 30px rgba(16, 185, 129, 0.6); transform: translateY(-1px); }
   .btn-play:disabled { background: #30363d; color: #8b949e; cursor: not-allowed; }
   .glass-card { background: rgba(22, 27, 34, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(48, 54, 61, 0.6); }
   .energy-bar { background: linear-gradient(90deg, #10b981 0%, #34d399 100%); box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); transition: width 0.3s ease; }
+  .form-bar { background: linear-gradient(90deg, #ef4444 0%, #fbbf24 50%, #10b981 100%); transition: width 0.5s ease; }
   .floating-number { position: fixed; pointer-events: none; font-weight: 700; color: #fbbf24; text-shadow: 0 0 10px rgba(251, 191, 36, 0.6); animation: floatUp 1.5s ease-out forwards; z-index: 100; }
   .spinner { border: 3px solid rgba(16, 185, 129, 0.2); border-top-color: #10b981; border-radius: 50%; width: 48px; height: 48px; animation: spin 0.8s linear infinite; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -69,7 +73,12 @@
   .result-win { background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.1)); border-color: #10b981; }
   .result-draw { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)); border-color: #3b82f6; }
   .result-lose { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1)); border-color: #ef4444; }
-  .league-badge { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border: 1px solid rgba(168, 85, 247, 0.4); }
+  .daily-claimed { background: linear-gradient(135deg, rgba(16, 185, 129, 0.3), rgba(5, 150, 105, 0.2)); border-color: #10b981; }
+  .daily-today { background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.2)); border-color: #fbbf24; animation: pulse 2s infinite; }
+  .achievement-locked { opacity: 0.4; filter: grayscale(1); }
+  .achievement-unlocked { border-color: #fbbf24; box-shadow: 0 0 15px rgba(251, 191, 36, 0.3); }
+  .injury-warning { animation: shake 0.5s ease-in-out; border-color: #ef4444 !important; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
 </style>
 </head>
 
@@ -90,6 +99,10 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <button id="dailyRewardBtn" class="press-effect p-2 rounded-lg bg-football-gold/20 border border-football-gold/40 relative">
+          <i data-lucide="gift" class="w-4 h-4 text-football-gold"></i>
+          <span id="dailyBadge" class="absolute -top-1 -right-1 w-3 h-3 bg-football-red rounded-full hidden"></span>
+        </button>
         <div class="text-[10px] text-tg-muted">Престиж:</div>
         <div id="prestigeDisplay" class="text-xs text-football-gold font-bold">⭐ 0</div>
       </div>
@@ -116,6 +129,26 @@
         <div class="mt-1 h-1 bg-tg-border rounded-full overflow-hidden">
           <div id="energyBar" class="energy-bar h-full" style="width: 100%"></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Форма и травмы -->
+    <div class="mt-2 grid grid-cols-2 gap-2">
+      <div class="bg-tg-bg/60 rounded-lg px-2 py-1 border border-tg-border">
+        <div class="flex items-center justify-between text-[10px] text-tg-muted uppercase">
+          <span class="flex items-center gap-1"><i data-lucide="activity" class="w-3 h-3 text-football-gold"></i>Форма</span>
+          <span id="formText" class="text-football-gold font-bold">100%</span>
+        </div>
+        <div class="mt-1 h-1 bg-tg-border rounded-full overflow-hidden">
+          <div id="formBar" class="form-bar h-full" style="width: 100%"></div>
+        </div>
+      </div>
+      <div class="bg-tg-bg/60 rounded-lg px-2 py-1 border border-tg-border">
+        <div class="flex items-center justify-between text-[10px] text-tg-muted uppercase">
+          <span class="flex items-center gap-1"><i data-lucide="heart-pulse" class="w-3 h-3 text-football-red"></i>Здоровье</span>
+          <span id="healthText" class="text-football-green font-bold">Здоров</span>
+        </div>
+        <div id="injuryStatus" class="text-[9px] text-tg-muted mt-0.5">Нет травм</div>
       </div>
     </div>
 
@@ -170,25 +203,21 @@
     <section id="tab-shop" class="tab-content tab-hidden px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2"><i data-lucide="shopping-bag" class="w-5 h-5 text-football-gold"></i>Магазин</h2>
 
-      <!-- Навыки -->
       <div class="mb-4">
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="dumbbell" class="w-4 h-4 text-football-green"></i>Прокачка навыков</h3>
         <div id="skillsList" class="space-y-2"></div>
       </div>
 
-      <!-- Оборудование -->
       <div class="mb-4">
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="cpu" class="w-4 h-4 text-football-blue"></i>Оборудование</h3>
         <div id="hardwareList" class="space-y-2"></div>
       </div>
 
-      <!-- Платформы -->
       <div class="mb-4">
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="star" class="w-4 h-4 text-football-gold"></i>Лиги</h3>
         <div id="platformsList" class="space-y-2"></div>
       </div>
 
-      <!-- Престиж -->
       <div>
         <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="rotate-ccw" class="w-4 h-4 text-football-purple"></i>Престиж</h3>
         <div id="prestigeSection" class="glass-card rounded-xl p-4"></div>
@@ -219,6 +248,25 @@
       </div>
     </section>
 
+    <!-- ВКЛАДКА: ДОСТИЖЕНИЯ (НОВАЯ) -->
+    <section id="tab-achievements" class="tab-content tab-hidden px-4 py-4">
+      <h2 class="text-lg font-bold mb-3 flex items-center gap-2">
+        <i data-lucide="award" class="w-5 h-5 text-football-gold"></i>Достижения
+      </h2>
+
+      <div class="glass-card rounded-xl p-4 mb-4">
+        <div class="text-center">
+          <div class="text-xs text-tg-muted mb-1">Прогресс</div>
+          <div id="achievementsProgress" class="text-2xl font-bold text-football-gold">0/0</div>
+          <div class="mt-2 h-2 bg-tg-border rounded-full overflow-hidden">
+            <div id="achievementsBar" class="h-full bg-gradient-to-r from-football-gold to-football-purple" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="achievementsList" class="space-y-2"></div>
+    </section>
+
     <!-- ВКЛАДКА: ЗАДАНИЯ -->
     <section id="tab-tasks" class="tab-content tab-hidden px-4 py-4">
       <h2 class="text-lg font-bold mb-3 flex items-center gap-2"><i data-lucide="target" class="w-5 h-5 text-football-red"></i>Задания</h2>
@@ -227,25 +275,28 @@
 
   </main>
 
-  <!-- НАВИГАЦИЯ -->
+  <!-- НАВИГАЦИЯ (5 вкладок) -->
   <nav class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] glass-card border-t border-tg-border z-30">
-    <div class="grid grid-cols-4">
-      <button data-tab="match" class="nav-item nav-item-active press-effect relative py-3 flex flex-col items-center gap-1 transition-colors">
-        <i data-lucide="flag" class="w-5 h-5"></i><span class="text-[10px] font-medium">Матч</span>
+    <div class="grid grid-cols-5">
+      <button data-tab="match" class="nav-item nav-item-active press-effect relative py-2.5 flex flex-col items-center gap-0.5 transition-colors">
+        <i data-lucide="flag" class="w-4 h-4"></i><span class="text-[9px] font-medium">Матч</span>
       </button>
-      <button data-tab="shop" class="nav-item press-effect relative py-3 flex flex-col items-center gap-1 text-tg-muted transition-colors">
-        <i data-lucide="shopping-bag" class="w-5 h-5"></i><span class="text-[10px] font-medium">Магазин</span>
+      <button data-tab="shop" class="nav-item press-effect relative py-2.5 flex flex-col items-center gap-0.5 text-tg-muted transition-colors">
+        <i data-lucide="shopping-bag" class="w-4 h-4"></i><span class="text-[9px] font-medium">Магазин</span>
       </button>
-      <button data-tab="leaderboard" class="nav-item press-effect relative py-3 flex flex-col items-center gap-1 text-tg-muted transition-colors">
-        <i data-lucide="trophy" class="w-5 h-5"></i><span class="text-[10px] font-medium">Топ</span>
+      <button data-tab="leaderboard" class="nav-item press-effect relative py-2.5 flex flex-col items-center gap-0.5 text-tg-muted transition-colors">
+        <i data-lucide="trophy" class="w-4 h-4"></i><span class="text-[9px] font-medium">Топ</span>
       </button>
-      <button data-tab="tasks" class="nav-item press-effect relative py-3 flex flex-col items-center gap-1 text-tg-muted transition-colors">
-        <i data-lucide="target" class="w-5 h-5"></i><span class="text-[10px] font-medium">Задания</span>
+      <button data-tab="achievements" class="nav-item press-effect relative py-2.5 flex flex-col items-center gap-0.5 text-tg-muted transition-colors">
+        <i data-lucide="award" class="w-4 h-4"></i><span class="text-[9px] font-medium">Награды</span>
+      </button>
+      <button data-tab="tasks" class="nav-item press-effect relative py-2.5 flex flex-col items-center gap-0.5 text-tg-muted transition-colors">
+        <i data-lucide="target" class="w-4 h-4"></i><span class="text-[9px] font-medium">Задания</span>
       </button>
     </div>
   </nav>
 
-  <!-- МОДАЛКА: РЕЗУЛЬТАТ -->
+  <!-- МОДАЛКА: РЕЗУЛЬТАТ МАТЧА -->
   <div id="matchResultModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
     <div id="matchResultCard" class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border-2">
       <div class="flex justify-center mb-4">
@@ -265,6 +316,7 @@
           <div id="resultCoins" class="text-2xl font-bold text-football-gold tabular-nums">$0</div>
         </div>
       </div>
+      <div id="eventBlock" class="hidden mb-4 p-3 rounded-lg border-2 animate-fade-in"></div>
       <button id="closeResultBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold">Отлично!</button>
     </div>
   </div>
@@ -274,7 +326,48 @@
     <div class="glass-card rounded-2xl p-8 text-center animate-fade-in">
       <div class="spinner mx-auto mb-4"></div>
       <h3 class="text-base font-bold mb-1">Матч идёт...</h3>
-      <p class="text-xs text-tg-muted">Борьба за победу</p>
+      <p id="matchCommentary" class="text-xs text-tg-muted mt-2">Разминка перед матчем</p>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА: ЕЖЕДНЕВНЫЕ НАГРАДЫ -->
+  <div id="dailyModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-slide-up border border-football-gold/30">
+      <div class="flex justify-center mb-3">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-football-gold to-yellow-600 flex items-center justify-center glow-gold">
+          <i data-lucide="gift" class="w-8 h-8 text-white"></i>
+        </div>
+      </div>
+      <h3 class="text-center text-lg font-bold mb-1">Ежедневная награда</h3>
+      <p class="text-center text-xs text-tg-muted mb-4">День <span id="dailyDayNum" class="text-football-gold font-bold">1</span> из 7</p>
+      
+      <div id="dailyRewardsList" class="grid grid-cols-7 gap-1 mb-4"></div>
+      
+      <div class="text-center mb-4">
+        <div class="text-xs text-tg-muted">Сегодняшняя награда:</div>
+        <div id="dailyRewardAmount" class="text-xl font-bold text-football-gold">$100</div>
+      </div>
+      
+      <button id="claimDailyBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold">Забрать награду</button>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА: ОФФЛАЙН ПРОГРЕСС -->
+  <div id="offlineModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+    <div class="glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border border-football-green/30">
+      <div class="flex justify-center mb-4">
+        <div class="w-16 h-16 rounded-full bg-gradient-to-br from-football-green to-football-dark flex items-center justify-center glow-green">
+          <i data-lucide="clock" class="w-8 h-8 text-white"></i>
+        </div>
+      </div>
+      <h3 class="text-center text-lg font-bold mb-2">С возвращением!</h3>
+      <p class="text-center text-sm text-tg-text mb-4">Пока тебя не было, твой пассивный доход работал:</p>
+      <div class="bg-tg-bg/60 rounded-lg p-4 text-center border border-tg-border mb-4">
+        <div class="text-xs text-tg-muted uppercase">Начислено</div>
+        <div id="offlineEarnings" class="text-3xl font-bold text-football-gold tabular-nums">$0</div>
+        <div id="offlineTime" class="text-xs text-tg-muted mt-1">за 0 часов</div>
+      </div>
+      <button id="claimOfflineBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold">Забрать!</button>
     </div>
   </div>
 
@@ -315,10 +408,16 @@ const CONFIG = {
   matchDurationMs: 2500,
   passiveIncomeMs: 1000,
   autoSaveMs: 5000,
-  prestigeThreshold: 100000 // Фанатов для престижа
+  prestigeThreshold: 100000,
+  offlineMaxHours: 8,
+  formDecayPerMatch: 15,
+  formRegenMs: 10000,
+  formRegenAmount: 5,
+  injuryChance: 0.08,
+  eventChance: 0.20
 };
 
-// ЛИГИ (бесконечная прогрессия)
+// ЛИГИ
 const LEAGUES = [
   { id: 'street', name: 'Дворовая лига', fansRequired: 0, multiplier: 1.0, color: 'from-gray-500 to-gray-700' },
   { id: 'school', name: 'Школьная лига', fansRequired: 5000, multiplier: 1.5, color: 'from-football-green to-football-dark' },
@@ -343,7 +442,7 @@ const SERVICES = [
   { id: 'gym', name: 'Тренажёрный зал', icon: 'dumbbell', cost: 20, effects: { strength: 1, stamina: 1 }, color: 'football-red', desc: '+1 Сила, +1 Выносл.' },
   { id: 'boots', name: 'Новые бутсы', icon: 'footprints', cost: 20, effects: { dribbling: 1, technique: 1 }, color: 'football-blue', desc: '+1 Дрибл., +1 Техн.' },
   { id: 'nutrition', name: 'Спорт. питание', icon: 'apple', cost: 20, effects: { stamina: 1, strength: 1, speed: 1 }, color: 'football-green', desc: '+1 Выносл., +1 Сила, +1 Скор.' },
-  { id: 'massage', name: 'Массаж', icon: 'heart', cost: 20, effects: { technique: 1, speed: 1, stamina: 1 }, color: 'football-gold', desc: '+1 Техн., +1 Скор., +1 Выносл.' }
+  { id: 'massage', name: 'Массаж', icon: 'heart', cost: 20, effects: { technique: 1, speed: 1, stamina: 1, form: 20 }, color: 'football-gold', desc: '+1 Техн., +1 Скор., +20% Формы' }
 ];
 
 const HARDWARE = [
@@ -359,30 +458,89 @@ const TASKS = [
   { id: 'ad', title: 'Посмотреть рекламу', desc: '5 секунд = 1000 монет', reward: 1000, icon: 'tv', color: 'football-red', type: 'timer', duration: 5 }
 ];
 
+// ДОСТИЖЕНИЯ
+const ACHIEVEMENTS = [
+  { id: 'first_match', name: 'Первый матч', desc: 'Сыграй первый матч', icon: 'play', check: (s) => s.stats.matchesPlayed >= 1, reward: 200 },
+  { id: 'ten_matches', name: 'Опытный игрок', desc: 'Сыграй 10 матчей', icon: 'target', check: (s) => s.stats.matchesPlayed >= 10, reward: 1000 },
+  { id: 'fifty_matches', name: 'Ветеран', desc: 'Сыграй 50 матчей', icon: 'award', check: (s) => s.stats.matchesPlayed >= 50, reward: 5000 },
+  { id: 'hundred_matches', name: 'Легенда поля', desc: 'Сыграй 100 матчей', icon: 'trophy', check: (s) => s.stats.matchesPlayed >= 100, reward: 25000 },
+  { id: 'first_win', name: 'Первая победа', desc: 'Выиграй первый матч', icon: 'medal', check: (s) => s.stats.wins >= 1, reward: 300 },
+  { id: 'ten_wins', name: 'Победная серия', desc: 'Выиграй 10 матчей', icon: 'flame', check: (s) => s.stats.wins >= 10, reward: 2000 },
+  { id: 'fans_1k', name: 'Начинающая звезда', desc: 'Набери 1000 фанатов', icon: 'users', check: (s) => s.fans >= 1000, reward: 500 },
+  { id: 'fans_10k', name: 'Восходящая звезда', desc: 'Набери 10000 фанатов', icon: 'star', check: (s) => s.fans >= 10000, reward: 3000 },
+  { id: 'fans_100k', name: 'Суперзвезда', desc: 'Набери 100000 фанатов', icon: 'crown', check: (s) => s.fans >= 100000, reward: 15000 },
+  { id: 'fans_1m', name: 'Икона футбола', desc: 'Набери 1000000 фанатов', icon: 'gem', check: (s) => s.fans >= 1000000, reward: 100000 },
+  { id: 'skill_100', name: 'Мастер навыков', desc: 'Прокачай любой навык до 100', icon: 'zap', check: (s) => Object.values(s.characteristics).some(v => v >= 100), reward: 2000 },
+  { id: 'all_skills_50', name: 'Универсал', desc: 'Все навыки на 50+', icon: 'layers', check: (s) => Object.values(s.characteristics).every(v => v >= 50), reward: 10000 },
+  { id: 'league_school', name: 'Школьная лига', desc: 'Достигни школьной лиги', icon: 'graduation-cap', check: (s) => s.leagueLevel >= 1, reward: 1000 },
+  { id: 'league_national', name: 'Национальная лига', desc: 'Достигни национальной лиги', icon: 'flag', check: (s) => s.leagueLevel >= 3, reward: 10000 },
+  { id: 'league_international', name: 'Международная арена', desc: 'Достигни международной лиги', icon: 'globe', check: (s) => s.leagueLevel >= 4, reward: 50000 },
+  { id: 'prestige_1', name: 'Перерождение', desc: 'Достигни 1 престижа', icon: 'rotate-ccw', check: (s) => s.prestige >= 1, reward: 5000 },
+  { id: 'prestige_5', name: 'Вечный воин', desc: 'Достигни 5 престижа', icon: 'infinity', check: (s) => s.prestige >= 5, reward: 50000 },
+  { id: 'rich_10k', name: 'Богач', desc: 'Накопи 10000 монет', icon: 'coins', check: (s) => s.coins >= 10000, reward: 1000 },
+  { id: 'rich_100k', name: 'Миллионер', desc: 'Накопи 100000 монет', icon: 'banknote', check: (s) => s.coins >= 100000, reward: 10000 },
+  { id: 'daily_7', name: 'Недельная серия', desc: 'Забери 7 ежедневных наград', icon: 'calendar', check: (s) => (s.dailyStreak || 0) >= 7, reward: 3000 }
+];
+
+// СЛУЧАЙНЫЕ СОБЫТИЯ
+const RANDOM_EVENTS = [
+  { id: 'sponsor', name: 'Спонсорский контракт!', desc: 'Крупный бренд подписал с тобой контракт!', type: 'good', coins: 2000, fans: 500, icon: 'briefcase' },
+  { id: 'interview', name: 'Успешное интервью', desc: 'Ты дал отличное интервью и gained фанатов', type: 'good', coins: 500, fans: 1500, icon: 'mic' },
+  { id: 'viral', name: 'Вирусное видео!', desc: 'Твой хайлайт стал вирусным в соцсетях', type: 'good', coins: 1000, fans: 3000, icon: 'trending-up' },
+  { id: 'charity', name: 'Благотворительность', desc: 'Ты помог детям — репутация выросла', type: 'good', coins: 200, fans: 2000, icon: 'heart' },
+  { id: 'scandal', name: 'Скандал в прессе', desc: 'Жёлтая пресса написала гадости', type: 'bad', coins: 0, fans: -1000, icon: 'alert-circle' },
+  { id: 'fine', name: 'Штраф от лиги', desc: 'Тебя оштрафовали за нарушение', type: 'bad', coins: -1500, fans: 0, icon: 'x-circle' },
+  { id: 'injury_news', name: 'Слухи о травме', desc: 'Пресса раздула историю о травме', type: 'bad', coins: 0, fans: -500, icon: 'newspaper' },
+  { id: 'fan_meeting', name: 'Встреча с фанатами', desc: 'Отличная встреча подняла настроение', type: 'good', coins: 300, fans: 800, icon: 'users' }
+];
+
+// КОММЕНТАРИИ МАТЧА
+const MATCH_COMMENTARIES = [
+  'Разминка перед матчем...',
+  'Первый тайм начался!',
+  'Опасный момент у ворот!',
+  'Отличный пас вразрез!',
+  'Удар по воротам!',
+  'Гол! Невероятно!',
+  'Сейв вратаря!',
+  'Жёсткий подкат!',
+  'Свободный удар...',
+  'Угловой!',
+  'Контратака!',
+  'Финальный свисток!'
+];
+
 // ========== СОСТОЯНИЕ ==========
 let gameState = {
   coins: 100,
   fans: 0,
-  totalFansEarned: 0, // Для лиг
+  totalFansEarned: 0,
   energy: CONFIG.maxEnergy,
+  form: 100,
+  injury: null,
+  injuryEndTime: 0,
   characteristics: { stamina: 0, strength: 0, dribbling: 0, shotPower: 0, technique: 0, speed: 0 },
   hardware: { phone: 0, camera: 0, studio: 0, pro: 0, agency: 0 },
   leagueLevel: 0,
   prestige: 0,
   completedTasks: { subscribe: false, ad: false },
+  completedAchievements: [],
+  dailyStreak: 0,
+  lastDailyReward: 0,
+  lastSaveTime: Date.now(),
   stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, recentMatches: [] },
   username: 'Player',
   userId: null,
-  lastSync: 0,
-  lastDailyReward: 0
+  lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v5';
+const SAVE_KEY = 'football_tycoon_save_v6';
 let tg = null;
 let leaderboardUnsubscribe = null;
 let passiveIncomeInterval = null;
 let energyRegenInterval = null;
 let autoSaveInterval = null;
+let formRegenInterval = null;
 
 // ========== TELEGRAM ==========
 function initTelegram() {
@@ -432,6 +590,9 @@ async function syncWithFirebase() {
       }
       gameState.leagueLevel = Math.max(gameState.leagueLevel, data.leagueLevel || 0);
       gameState.prestige = Math.max(gameState.prestige, data.prestige || 0);
+      gameState.completedAchievements = data.completedAchievements || [];
+      gameState.dailyStreak = Math.max(gameState.dailyStreak, data.dailyStreak || 0);
+      gameState.lastDailyReward = Math.max(gameState.lastDailyReward, data.lastDailyReward || 0);
       gameState.stats.matchesPlayed = Math.max(gameState.stats.matchesPlayed, data.stats?.matchesPlayed || 0);
       gameState.stats.wins = Math.max(gameState.stats.wins, data.stats?.wins || 0);
       gameState.stats.draws = Math.max(gameState.stats.draws, data.stats?.draws || 0);
@@ -447,6 +608,9 @@ async function syncWithFirebase() {
         hardware: { ...gameState.hardware },
         leagueLevel: gameState.leagueLevel,
         prestige: gameState.prestige,
+        completedAchievements: gameState.completedAchievements,
+        dailyStreak: gameState.dailyStreak,
+        lastDailyReward: gameState.lastDailyReward,
         stats: { matchesPlayed: gameState.stats.matchesPlayed, wins: gameState.stats.wins, draws: gameState.stats.draws, losses: gameState.stats.losses },
         lastOnline: Date.now()
       });
@@ -470,6 +634,9 @@ async function updatePlayerData() {
       hardware: { ...gameState.hardware },
       leagueLevel: gameState.leagueLevel,
       prestige: gameState.prestige,
+      completedAchievements: gameState.completedAchievements,
+      dailyStreak: gameState.dailyStreak,
+      lastDailyReward: gameState.lastDailyReward,
       stats: { matchesPlayed: gameState.stats.matchesPlayed, wins: gameState.stats.wins, draws: gameState.stats.draws, losses: gameState.stats.losses },
       lastOnline: Date.now()
     });
@@ -480,18 +647,14 @@ async function updatePlayerData() {
 }
 
 function listenToLeaderboard() {
-  // Если Firebase не готов — показываем локальный топ
   if (!firebaseReady) {
-    console.log('️ Firebase не готов, показываем локальный топ');
     renderLocalLeaderboard();
     return;
   }
-
   const leaderboardRef = database.ref('players');
   if (leaderboardUnsubscribe) {
     leaderboardRef.off('value', leaderboardUnsubscribe);
   }
-
   const callback = (snapshot) => {
     const players = [];
     snapshot.forEach((childSnapshot) => {
@@ -510,14 +673,11 @@ function listenToLeaderboard() {
     renderLeaderboard(players.slice(0, 50), myRank);
     document.getElementById('playersCount').textContent = players.length + ' игроков';
   };
-
   leaderboardRef.on('value', callback);
   leaderboardUnsubscribe = callback;
-  console.log('✅ Слушатель топа активен');
 }
 
 function renderLocalLeaderboard() {
-  // Локальный топ из localStorage
   const localPlayers = JSON.parse(localStorage.getItem('local_leaderboard') || '[]');
   localPlayers.push({
     userId: gameState.userId || 'local',
@@ -535,6 +695,7 @@ function renderLocalLeaderboard() {
 
 // ========== GAME ==========
 function saveGame() {
+  gameState.lastSaveTime = Date.now();
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(gameState)); } catch (e) {}
   updatePlayerData();
 }
@@ -548,6 +709,7 @@ function loadGame() {
       gameState.characteristics = { ...gameState.characteristics, ...(parsed.characteristics || {}) };
       gameState.hardware = { ...gameState.hardware, ...(parsed.hardware || {}) };
       gameState.completedTasks = { ...gameState.completedTasks, ...(parsed.completedTasks || {}) };
+      gameState.completedAchievements = parsed.completedAchievements || [];
       gameState.stats = { ...gameState.stats, ...(parsed.stats || {}) };
     }
   } catch (e) {}
@@ -577,7 +739,12 @@ function getCurrentLeague() {
 }
 
 function getPrestigeMultiplier() {
-  return 1 + (gameState.prestige * 0.1); // +10% за каждый престиж
+  return 1 + (gameState.prestige * 0.1);
+}
+
+function getFormMultiplier() {
+  // Форма влияет на результат: 50% формы = 0.75 множитель, 100% = 1.0
+  return 0.5 + (gameState.form / 200);
 }
 
 function getSkillCost(skillId, currentLevel) {
@@ -604,17 +771,72 @@ function getPassiveIncome() {
   return Math.floor(total * getPrestigeMultiplier());
 }
 
+function isInjured() {
+  if (!gameState.injury) return false;
+  if (Date.now() < gameState.injuryEndTime) return true;
+  // Травма прошла
+  gameState.injury = null;
+  gameState.injuryEndTime = 0;
+  return false;
+}
+
+function getInjuryTimeLeft() {
+  if (!isInjured()) return 0;
+  return Math.max(0, Math.ceil((gameState.injuryEndTime - Date.now()) / 1000));
+}
+
 function updateHeaderUI() {
   document.getElementById('coinsDisplay').textContent = formatCoins(gameState.coins);
   document.getElementById('fansDisplay').textContent = formatNumber(gameState.fans);
   document.getElementById('energyText').textContent = `${Math.floor(gameState.energy)}/${CONFIG.maxEnergy}`;
   document.getElementById('energyBar').style.width = (gameState.energy / CONFIG.maxEnergy * 100) + '%';
   document.getElementById('passiveIncomeDisplay').textContent = formatCoins(getPassiveIncome()) + '/сек';
-  document.getElementById('playMatchBtn').disabled = gameState.energy < CONFIG.matchCost;
+  document.getElementById('playMatchBtn').disabled = gameState.energy < CONFIG.matchCost || isInjured();
   document.getElementById('prestigeDisplay').textContent = '⭐ ' + gameState.prestige;
   
   const league = getCurrentLeague();
   document.getElementById('leagueDisplay').textContent = league.name;
+  
+  // Форма
+  document.getElementById('formText').textContent = Math.floor(gameState.form) + '%';
+  document.getElementById('formBar').style.width = gameState.form + '%';
+  
+  // Здоровье/травмы
+  const healthText = document.getElementById('healthText');
+  const injuryStatus = document.getElementById('injuryStatus');
+  if (isInjured()) {
+    const timeLeft = getInjuryTimeLeft();
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    healthText.textContent = 'Травма!';
+    healthText.className = 'text-football-red font-bold';
+    injuryStatus.textContent = `${gameState.injury} (${minutes}м ${seconds}с)`;
+    document.getElementById('playMatchBtn').disabled = true;
+  } else {
+    healthText.textContent = 'Здоров';
+    healthText.className = 'text-football-green font-bold';
+    injuryStatus.textContent = 'Нет травм';
+  }
+  
+  // Бейдж ежедневной награды
+  const dailyBadge = document.getElementById('dailyBadge');
+  if (canClaimDailyReward()) {
+    dailyBadge.classList.remove('hidden');
+  } else {
+    dailyBadge.classList.add('hidden');
+  }
+}
+
+function canClaimDailyReward() {
+  const now = Date.now();
+  const lastClaim = gameState.lastDailyReward || 0;
+  const oneDay = 24 * 60 * 60 * 1000;
+  return (now - lastClaim) >= oneDay;
+}
+
+function getDailyRewardAmount(day) {
+  const rewards = [100, 250, 500, 1000, 2000, 5000, 10000];
+  return rewards[(day - 1) % 7];
 }
 
 // ========== РЕНДЕРИНГ ==========
@@ -655,7 +877,7 @@ function renderServices() {
         </div>
         <div class="text-[11px] font-bold text-center mb-0.5">${service.name}</div>
         <div class="text-[9px] text-tg-muted text-center">${service.desc}</div>
-        <div class="text-[10px] text-football-green text-center mt-1 font-bold">−${service.cost} ⚡</div>
+        <div class="text-[10px] text-football-green text-center mt-1 font-bold">−${service.cost} </div>
       </button>
     `;
   }).join('');
@@ -674,7 +896,7 @@ function renderRecentMatches() {
   container.innerHTML = gameState.stats.recentMatches.slice(0, 5).map(m => {
     const resultClass = m.result === 'win' ? 'result-win' : m.result === 'draw' ? 'result-draw' : 'result-lose';
     const resultText = m.result === 'win' ? 'Победа' : m.result === 'draw' ? 'Ничья' : 'Поражение';
-    const resultIcon = m.result === 'win' ? '🏆' : m.result === 'draw' ? '🤝' : '';
+    const resultIcon = m.result === 'win' ? '🏆' : m.result === 'draw' ? '' : '';
     return `
       <div class="flex items-center justify-between p-2 ${resultClass} rounded-lg border">
         <div class="flex items-center gap-2"><span class="text-base">${resultIcon}</span><span class="text-xs font-bold">${resultText}</span></div>
@@ -780,7 +1002,6 @@ function renderPlatforms() {
     const isCurrent = gameState.leagueLevel === idx;
     const isPast = idx < gameState.leagueLevel;
     const isNext = idx === gameState.leagueLevel + 1;
-    const canAfford = gameState.totalFansEarned >= league.fansRequired;
     let btnHtml = '';
     if (isCurrent) btnHtml = `<span class="text-[11px] bg-football-green/20 text-football-green px-2 py-1.5 rounded-lg font-bold">АКТИВНО</span>`;
     else if (isPast) btnHtml = `<span class="text-[11px] text-tg-muted px-2 py-1.5">Пройдено</span>`;
@@ -815,7 +1036,7 @@ function renderPrestige() {
     </div>
     ${canPrestige ? `
       <button id="prestigeBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold">
-        🔄 Престиж (+${nextPrestigeBonus}% бонус)
+         Престиж (+${nextPrestigeBonus}% бонус)
       </button>
       <div class="text-[10px] text-tg-muted text-center mt-2">
         Сбросит навыки и монеты, но даст постоянный бонус
@@ -830,6 +1051,33 @@ function renderPrestige() {
   if (canPrestige) {
     document.getElementById('prestigeBtn').addEventListener('click', doPrestige);
   }
+}
+
+function renderAchievements() {
+  const container = document.getElementById('achievementsList');
+  const completed = gameState.completedAchievements || [];
+  const total = ACHIEVEMENTS.length;
+  const done = completed.length;
+  
+  document.getElementById('achievementsProgress').textContent = `${done}/${total}`;
+  document.getElementById('achievementsBar').style.width = ((done / total) * 100) + '%';
+  
+  container.innerHTML = ACHIEVEMENTS.map(ach => {
+    const isUnlocked = completed.includes(ach.id);
+    return `
+      <div class="glass-card rounded-xl p-3 flex items-center gap-3 ${isUnlocked ? 'achievement-unlocked' : 'achievement-locked'}">
+        <div class="w-11 h-11 rounded-lg ${isUnlocked ? 'bg-gradient-to-br from-football-gold to-yellow-600' : 'bg-tg-border/40'} flex items-center justify-center flex-shrink-0">
+          <i data-lucide="${ach.icon}" class="w-5 h-5 ${isUnlocked ? 'text-white' : 'text-tg-muted'}"></i>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="font-bold text-sm">${ach.name}</div>
+          <div class="text-[11px] text-tg-muted">${ach.desc}</div>
+          <div class="text-[10px] text-football-gold mt-0.5">Награда: ${formatCoins(ach.reward)}</div>
+        </div>
+        ${isUnlocked ? '<i data-lucide="check-circle-2" class="w-6 h-6 text-football-green flex-shrink-0"></i>' : '<i data-lucide="lock" class="w-5 h-5 text-tg-muted flex-shrink-0"></i>'}
+      </div>
+    `;
+  }).join('');
 }
 
 function renderTasks() {
@@ -872,6 +1120,7 @@ function buySkill(skillId) {
   saveGame();
   renderSkills();
   renderCharacteristics();
+  checkAchievements();
   updateHeaderUI();
   if (window.haptic) window.haptic('light');
 }
@@ -896,7 +1145,9 @@ function useService(serviceId) {
   if (gameState.energy < service.cost) return;
   gameState.energy -= service.cost;
   for (let key in service.effects) {
-    if (gameState.characteristics[key] !== undefined) {
+    if (key === 'form') {
+      gameState.form = Math.min(100, gameState.form + service.effects[key]);
+    } else if (gameState.characteristics[key] !== undefined) {
       gameState.characteristics[key] = Math.min(100, gameState.characteristics[key] + service.effects[key]);
     }
   }
@@ -904,21 +1155,40 @@ function useService(serviceId) {
   renderServices();
   renderCharacteristics();
   updateHeaderUI();
-  showFloatingNumber(document.getElementById('servicesList'), '+' + Object.values(service.effects).reduce((a, b) => a + b, 0) + ' навыков');
+  showFloatingNumber(document.getElementById('servicesList'), '+' + Object.values(service.effects).reduce((a, b) => a + b, 0) + ' бонусов');
   if (window.haptic) window.haptic('light');
 }
 
 async function playMatch() {
   if (gameState.energy < CONFIG.matchCost) return;
+  if (isInjured()) {
+    alert('Ты травмирован! Подожди восстановления или используй массаж.');
+    return;
+  }
+  if (gameState.form < 20) {
+    alert('Форма слишком низкая! Отдохни или сделай массаж.');
+    return;
+  }
+  
   gameState.energy -= CONFIG.matchCost;
+  gameState.form = Math.max(0, gameState.form - CONFIG.formDecayPerMatch);
   updateHeaderUI();
   if (window.haptic) window.haptic('medium');
 
   const playingModal = document.getElementById('playingModal');
+  const commentaryEl = document.getElementById('matchCommentary');
   playingModal.classList.remove('hidden');
   playingModal.classList.add('flex');
+  
+  // Анимация комментариев
+  let commentIndex = 0;
+  const commentInterval = setInterval(() => {
+    commentaryEl.textContent = MATCH_COMMENTARIES[commentIndex % MATCH_COMMENTARIES.length];
+    commentIndex++;
+  }, 400);
 
   await new Promise(r => setTimeout(r, CONFIG.matchDurationMs));
+  clearInterval(commentInterval);
 
   playingModal.classList.add('hidden');
   playingModal.classList.remove('flex');
@@ -934,11 +1204,32 @@ async function playMatch() {
   gameState.stats.recentMatches.unshift({ result: result.result, fans: result.fans, coins: result.coins, time: Date.now() });
   if (gameState.stats.recentMatches.length > 10) gameState.stats.recentMatches.pop();
 
+  // Проверка травмы
+  let injuryEvent = null;
+  if (Math.random() < CONFIG.injuryChance && !isInjured()) {
+    const injuries = ['Растяжение', 'Ушиб', 'Вывих', 'Надрыв'];
+    const injury = injuries[randInt(0, injuries.length - 1)];
+    const duration = randInt(30, 120) * 1000; // 30-120 секунд для демо
+    gameState.injury = injury;
+    gameState.injuryEndTime = Date.now() + duration;
+    injuryEvent = { name: 'Травма!', desc: `Ты получил ${injury.toLowerCase()}. Восстановление: ${Math.ceil(duration/1000)}с`, type: 'bad', icon: 'alert-triangle' };
+  }
+
+  // Случайное событие
+  let randomEvent = null;
+  if (Math.random() < CONFIG.eventChance) {
+    randomEvent = RANDOM_EVENTS[randInt(0, RANDOM_EVENTS.length - 1)];
+    gameState.coins += randomEvent.coins;
+    gameState.fans = Math.max(0, gameState.fans + randomEvent.fans);
+    gameState.totalFansEarned = Math.max(0, gameState.totalFansEarned + (randomEvent.fans > 0 ? randomEvent.fans : 0));
+  }
+
   saveGame();
   updateHeaderUI();
   renderRecentMatches();
   renderCharacteristics();
-  showMatchResult(result);
+  checkAchievements();
+  showMatchResult(result, randomEvent, injuryEvent);
   if (window.hapticSuccess) window.hapticSuccess();
 }
 
@@ -946,7 +1237,7 @@ function calculateMatchResult() {
   const totalSkill = getTotalSkill();
   const maxSkill = 600;
   const skillRatio = totalSkill / maxSkill;
-  const winChance = Math.min(0.15 + skillRatio * 0.7, 0.85);
+  const winChance = Math.min(0.15 + skillRatio * 0.7, 0.85) * getFormMultiplier();
   const drawChance = Math.max(0.25 - skillRatio * 0.1, 0.15);
   const roll = Math.random();
   let result;
@@ -974,18 +1265,40 @@ function doPrestige() {
   gameState.prestige++;
   gameState.coins = 100;
   gameState.characteristics = { stamina: 0, strength: 0, dribbling: 0, shotPower: 0, technique: 0, speed: 0 };
-  // Фанаты и лиги сохраняются!
   
   saveGame();
   renderSkills();
   renderCharacteristics();
   renderPrestige();
+  checkAchievements();
   updateHeaderUI();
   if (window.hapticSuccess) window.hapticSuccess();
   alert(`🎉 Престиж ${gameState.prestige} достигнут! Бонус: +${gameState.prestige * 10}% к доходу!`);
 }
 
-function showMatchResult(result) {
+function checkAchievements() {
+  const newlyUnlocked = [];
+  ACHIEVEMENTS.forEach(ach => {
+    if (!gameState.completedAchievements.includes(ach.id) && ach.check(gameState)) {
+      gameState.completedAchievements.push(ach.id);
+      gameState.coins += ach.reward;
+      newlyUnlocked.push(ach);
+    }
+  });
+  
+  if (newlyUnlocked.length > 0) {
+    saveGame();
+    renderAchievements();
+    updateHeaderUI();
+    // Показать уведомление о первом достижении
+    if (newlyUnlocked.length === 1) {
+      const ach = newlyUnlocked[0];
+      showFloatingNumber(document.body, `🏆 ${ach.name}!`);
+    }
+  }
+}
+
+function showMatchResult(result, randomEvent, injuryEvent) {
   const modal = document.getElementById('matchResultModal');
   const card = document.getElementById('matchResultCard');
   const icon = document.getElementById('resultIcon');
@@ -994,9 +1307,11 @@ function showMatchResult(result) {
   const text = document.getElementById('resultText');
   const fansEl = document.getElementById('resultFans');
   const coinsEl = document.getElementById('resultCoins');
+  const eventBlock = document.getElementById('eventBlock');
 
   fansEl.textContent = '0';
   coinsEl.textContent = '$0';
+  eventBlock.classList.add('hidden');
 
   if (result.result === 'win') {
     card.className = 'glass-card rounded-2xl p-6 max-w-sm w-full animate-bounce-in border-2 result-win';
@@ -1019,6 +1334,23 @@ function showMatchResult(result) {
     title.textContent = 'ПОРАЖЕНИЕ';
     title.className = 'text-center text-xl font-bold mb-2 text-football-red';
     text.textContent = 'Не расстраивайся! Тренируйся и возвращайся!';
+  }
+
+  // Показать событие если есть
+  const event = randomEvent || injuryEvent;
+  if (event) {
+    eventBlock.classList.remove('hidden');
+    const isGood = event.type === 'good';
+    eventBlock.className = `mb-4 p-3 rounded-lg border-2 animate-fade-in ${isGood ? 'bg-football-green/10 border-football-green' : 'bg-football-red/10 border-football-red'}`;
+    eventBlock.innerHTML = `
+      <div class="flex items-center gap-2 mb-1">
+        <i data-lucide="${event.icon}" class="w-4 h-4 ${isGood ? 'text-football-green' : 'text-football-red'}"></i>
+        <span class="font-bold text-sm ${isGood ? 'text-football-green' : 'text-football-red'}">${event.name}</span>
+      </div>
+      <div class="text-xs text-tg-text">${event.desc}</div>
+      ${event.coins !== 0 ? `<div class="text-xs ${event.coins > 0 ? 'text-football-gold' : 'text-football-red'} mt-1">${event.coins > 0 ? '+' : ''}${formatCoins(event.coins)}</div>` : ''}
+      ${event.fans !== 0 ? `<div class="text-xs ${event.fans > 0 ? 'text-football-blue' : 'text-football-red'}">${event.fans > 0 ? '+' : ''}${formatNumber(event.fans)} фанатов</div>` : ''}
+    `;
   }
 
   modal.classList.remove('hidden');
@@ -1058,6 +1390,102 @@ function closeMatchResult() {
   modal.classList.remove('flex');
 }
 
+// ========== ЕЖЕДНЕВНЫЕ НАГРАДЫ ==========
+function openDailyReward() {
+  if (!canClaimDailyReward()) {
+    const lastClaim = gameState.lastDailyReward || 0;
+    const hoursLeft = Math.ceil((24 * 60 * 60 * 1000 - (Date.now() - lastClaim)) / (60 * 60 * 1000));
+    alert(`Следующая награда через ${hoursLeft} часов`);
+    return;
+  }
+  
+  const day = (gameState.dailyStreak % 7) + 1;
+  document.getElementById('dailyDayNum').textContent = day;
+  document.getElementById('dailyRewardAmount').textContent = formatCoins(getDailyRewardAmount(day));
+  
+  const list = document.getElementById('dailyRewardsList');
+  list.innerHTML = '';
+  for (let i = 1; i <= 7; i++) {
+    const reward = getDailyRewardAmount(i);
+    let className = 'p-2 rounded-lg border text-center text-[10px] ';
+    if (i < day) {
+      className += 'daily-claimed border-football-green';
+    } else if (i === day) {
+      className += 'daily-today border-football-gold';
+    } else {
+      className += 'border-tg-border bg-tg-bg/40';
+    }
+    list.innerHTML += `<div class="${className}"><div class="font-bold">${formatCoins(reward)}</div><div class="text-[8px] text-tg-muted">День ${i}</div></div>`;
+  }
+  
+  document.getElementById('dailyModal').classList.remove('hidden');
+  document.getElementById('dailyModal').classList.add('flex');
+  if (window.lucide) lucide.createIcons();
+}
+
+function claimDailyReward() {
+  if (!canClaimDailyReward()) return;
+  
+  const day = (gameState.dailyStreak % 7) + 1;
+  const reward = getDailyRewardAmount(day);
+  
+  gameState.coins += reward;
+  gameState.dailyStreak++;
+  gameState.lastDailyReward = Date.now();
+  
+  saveGame();
+  updateHeaderUI();
+  checkAchievements();
+  
+  document.getElementById('dailyModal').classList.add('hidden');
+  document.getElementById('dailyModal').classList.remove('flex');
+  
+  showFloatingNumber(document.body, `+${formatCoins(reward)} 🎁`);
+  if (window.hapticSuccess) window.hapticSuccess();
+  
+  if (gameState.dailyStreak % 7 === 0) {
+    setTimeout(() => alert('🎉 Недельная серия завершена! Бонус получен!'), 500);
+  }
+}
+
+// ========== ОФФЛАЙН ПРОГРЕСС ==========
+function calculateOfflineProgress() {
+  const now = Date.now();
+  const lastSave = gameState.lastSaveTime || now;
+  const elapsed = now - lastSave;
+  const maxOffline = CONFIG.offlineMaxHours * 60 * 60 * 1000;
+  const cappedElapsed = Math.min(elapsed, maxOffline);
+  const seconds = Math.floor(cappedElapsed / 1000);
+  const income = getPassiveIncome();
+  const earned = income * seconds;
+  return { earned, hours: (cappedElapsed / (60 * 60 * 1000)).toFixed(1) };
+}
+
+function showOfflineProgress() {
+  const { earned, hours } = calculateOfflineProgress();
+  if (earned <= 0 || hours < 0.1) return;
+  
+  document.getElementById('offlineEarnings').textContent = formatCoins(earned);
+  document.getElementById('offlineTime').textContent = `за ${hours} часов`;
+  
+  document.getElementById('offlineModal').classList.remove('hidden');
+  document.getElementById('offlineModal').classList.add('flex');
+}
+
+function claimOfflineProgress() {
+  const { earned } = calculateOfflineProgress();
+  gameState.coins += earned;
+  saveGame();
+  updateHeaderUI();
+  
+  document.getElementById('offlineModal').classList.add('hidden');
+  document.getElementById('offlineModal').classList.remove('flex');
+  
+  showFloatingNumber(document.body, `+${formatCoins(earned)} `);
+  if (window.hapticSuccess) window.hapticSuccess();
+}
+
+// ========== ЗАДАНИЯ ==========
 function startTask(taskId, btnEl) {
   const task = TASKS.find(t => t.id === taskId);
   if (!task || gameState.completedTasks[taskId]) return;
@@ -1067,6 +1495,7 @@ function startTask(taskId, btnEl) {
     saveGame();
     updateHeaderUI();
     renderTasks();
+    checkAchievements();
     showFloatingNumber(btnEl, '+' + formatNumber(task.reward));
     if (window.hapticSuccess) window.hapticSuccess();
   } else if (task.type === 'timer') {
@@ -1081,6 +1510,7 @@ function startTask(taskId, btnEl) {
         saveGame();
         updateHeaderUI();
         renderTasks();
+        checkAchievements();
         showFloatingNumber(btnEl, '+' + formatNumber(task.reward));
         if (window.hapticSuccess) window.hapticSuccess();
         return;
@@ -1125,6 +1555,7 @@ function switchTab(tabName) {
   if (window.haptic) window.haptic('light');
   if (tabName === 'shop') { renderSkills(); renderHardware(); renderPlatforms(); renderPrestige(); }
   else if (tabName === 'match') { renderCharacteristics(); renderServices(); renderRecentMatches(); }
+  else if (tabName === 'achievements') { renderAchievements(); }
   else if (tabName === 'tasks') { renderTasks(); }
 }
 
@@ -1136,6 +1567,16 @@ function startEnergyRegen() {
       updateHeaderUI();
     }
   }, CONFIG.energyRegenMs);
+}
+
+function startFormRegen() {
+  if (formRegenInterval) clearInterval(formRegenInterval);
+  formRegenInterval = setInterval(() => {
+    if (gameState.form < 100) {
+      gameState.form = Math.min(100, gameState.form + CONFIG.formRegenAmount);
+      updateHeaderUI();
+    }
+  }, CONFIG.formRegenMs);
 }
 
 function startPassiveIncome() {
@@ -1157,7 +1598,7 @@ function startAutoSave() {
 function init() {
   initTelegram();
   loadGame();
-  getCurrentLeague(); // Обновляем лигу
+  getCurrentLeague();
   
   renderCharacteristics();
   renderServices();
@@ -1166,6 +1607,7 @@ function init() {
   renderHardware();
   renderPlatforms();
   renderPrestige();
+  renderAchievements();
   renderTasks();
   updateHeaderUI();
   
@@ -1179,6 +1621,9 @@ function init() {
   document.getElementById('matchResultModal').addEventListener('click', (e) => {
     if (e.target.id === 'matchResultModal') closeMatchResult();
   });
+  document.getElementById('dailyRewardBtn').addEventListener('click', openDailyReward);
+  document.getElementById('claimDailyBtn').addEventListener('click', claimDailyReward);
+  document.getElementById('claimOfflineBtn').addEventListener('click', claimOfflineProgress);
   
   window.addEventListener('beforeunload', saveGame);
   document.addEventListener('visibilitychange', () => {
@@ -1186,21 +1631,31 @@ function init() {
   });
   
   startEnergyRegen();
+  startFormRegen();
   startPassiveIncome();
   startAutoSave();
+  
+  // Оффлайн прогресс
+  setTimeout(() => {
+    const offline = calculateOfflineProgress();
+    if (offline.earned > 0 && offline.hours >= 0.1) {
+      showOfflineProgress();
+    }
+  }, 500);
   
   if (gameState.userId) {
     syncWithFirebase().then(() => {
       updateHeaderUI();
       renderCharacteristics();
       renderPrestige();
+      renderAchievements();
       listenToLeaderboard();
     });
   } else {
     renderLocalLeaderboard();
   }
   
-  console.log('%c Football Tycoon запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
+  console.log('%c⚽ Football Tycoon запущен с топ-5 механиками!', 'color: #10b981; font-size: 16px; font-weight: bold');
 }
 
 const origRenderCharacteristics = renderCharacteristics;
@@ -1210,6 +1665,7 @@ const origRenderSkills = renderSkills;
 const origRenderHardware = renderHardware;
 const origRenderPlatforms = renderPlatforms;
 const origRenderPrestige = renderPrestige;
+const origRenderAchievements = renderAchievements;
 const origRenderTasks = renderTasks;
 
 function wrapWithIcons(fn) {
@@ -1225,6 +1681,7 @@ renderSkills = wrapWithIcons(origRenderSkills);
 renderHardware = wrapWithIcons(origRenderHardware);
 renderPlatforms = wrapWithIcons(origRenderPlatforms);
 renderPrestige = wrapWithIcons(origRenderPrestige);
+renderAchievements = wrapWithIcons(origRenderAchievements);
 renderTasks = wrapWithIcons(origRenderTasks);
 
 if (document.readyState === 'loading') {
