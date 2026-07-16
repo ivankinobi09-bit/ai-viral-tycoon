@@ -26,7 +26,8 @@ tailwind.config = {
         'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         'fade-in': 'fadeIn 0.3s ease-out',
         'float-up': 'floatUp 1.5s ease-out forwards',
-        'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
+        'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
+        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       },
       keyframes: {
         slideUp: { '0%': { transform: 'translateY(30px)', opacity: '0' }, '100%': { transform: 'translateY(0)', opacity: '1' } },
@@ -98,6 +99,7 @@ tailwind.config = {
   .contact-btn { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border: 1px solid #a855f7; transition: all 0.2s ease; }
   .contact-btn:active { transform: scale(0.96); }
   .stadium-active { border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1); }
+  .prestige-locked { opacity: 0.6; }
 </style>
 </head>
 
@@ -288,7 +290,7 @@ tailwind.config = {
 
       <div class="glass-card rounded-xl p-4 mb-4 border border-football-gold/30">
         <div class="text-center mb-3">
-          <div class="text-xs text-tg-muted mb-1">🏆 Призовой фонд сезона</div>
+          <div class="text-xs text-tg-muted mb-1"> Призовой фонд сезона</div>
           <div class="text-lg font-bold text-football-gold">700 ₽ разыгрывается</div>
         </div>
         <div class="grid grid-cols-3 gap-2 mb-3">
@@ -503,7 +505,9 @@ try {
   firebaseReady = true;
 } catch (error) { console.error('Firebase error:', error); }
 
-// ИСПРАВЛЕНО: сезон теперь 5 дней (вместо 7)
+// ========== ИСПРАВЛЕННЫЙ ТАЙМЕР (единый для всех - 5 дней) ==========
+const SEASON_START_TIMESTAMP = Date.now(); // Начинаем отсчет СЕЙЧАС
+
 const CONFIG = {
   matchCost: 50,
   baseMaxEnergy: 100,
@@ -511,18 +515,16 @@ const CONFIG = {
   matchDurationMs: 2500,
   passiveIncomeMs: 1000,
   autoSaveMs: 5000,
-  prestigeThreshold: 100000,
+  prestigeThreshold: 1000000, // 1 МИЛЛИОН фанатов
+  prestigeMinLeague: 6, // Минимум Легендарная лига
   offlineMaxHours: 8,
   buffDurationMs: 3600000,
   minigameCooldownMs: 300000,
   seasonDurationMs: 5 * 24 * 60 * 60 * 1000 // 5 дней
 };
 
-// ГЛОБАЛЬНЫЙ таймер сезона для всех игроков
-const SEASON_START_DATE = new Date('2025-01-20T00:00:00Z').getTime();
-
 function getSeasonStart() {
-  return SEASON_START_DATE;
+  return SEASON_START_TIMESTAMP;
 }
 
 function getSeasonTimeLeft() {
@@ -574,7 +576,7 @@ const HARDWARE = [
   { id: 'agency', name: 'Агентство', icon: 'building', baseCost: 100000, income: 1000, color: 'from-football-purple to-purple-700' }
 ];
 
-// ИСПРАВЛЕНО: снижен доход стадионов (макс 15к фанатов/час), можно иметь только один активный
+// ИСПРАВЛЕНО: снижен доход (макс 15к фанатов/час)
 const STADIUMS = [
   { 
     id: 'local', 
@@ -735,7 +737,7 @@ let gameState = {
   characteristics: { stamina: 0, strength: 0, dribbling: 0, shotPower: 0, technique: 0, speed: 0 },
   hardware: { phone: 0, camera: 0, studio: 0, pro: 0, agency: 0 },
   stadiums: { local: false, otkritie: false, luzhniki: false, santiagobernabeu: false, oldtrafford: false, allianzarena: false, wembley: false },
-  activeStadium: null, // ИСПРАВЛЕНО: только один активный стадион
+  activeStadium: null,
   infrastructure: { stadium: 0, academy: 0, scouts: 0, sponsors: 0 },
   leagueLevel: 0, prestige: 0,
   completedAchievements: [],
@@ -747,7 +749,7 @@ let gameState = {
   username: 'Player', userId: null, lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v11';
+const SAVE_KEY = 'football_tycoon_save_v12';
 let tg = null;
 let leaderboardUnsubscribe = null;
 let passiveIncomeInterval = null;
@@ -818,7 +820,8 @@ async function syncWithFirebase() {
         }
       }
       gameState.leagueLevel = Math.max(gameState.leagueLevel || 0, data.leagueLevel || 0);
-      gameState.prestige = Math.max(gameState.prestige || 0, data.prestige || 0);
+      // ИСПРАВЛЕНО: сброс престижей до 0
+      gameState.prestige = 0;
       gameState.completedAchievements = data.completedAchievements || gameState.completedAchievements || [];
       gameState.dailyStreak = Math.max(gameState.dailyStreak || 0, data.dailyStreak || 0);
       gameState.lastDailyReward = Math.max(gameState.lastDailyReward || 0, data.lastDailyReward || 0);
@@ -844,7 +847,7 @@ async function syncWithFirebase() {
         activeStadium: gameState.activeStadium,
         infrastructure: { ...gameState.infrastructure },
         leagueLevel: gameState.leagueLevel,
-        prestige: gameState.prestige,
+        prestige: 0, // Сброс престижа
         completedAchievements: gameState.completedAchievements,
         dailyStreak: gameState.dailyStreak,
         lastDailyReward: gameState.lastDailyReward,
@@ -967,7 +970,10 @@ function getCurrentLeague() {
   return currentLeague;
 }
 
-function getPrestigeMultiplier() { return 1 + (gameState.prestige * 0.1); }
+// ИСПРАВЛЕНО: +25% за престиж
+function getPrestigeMultiplier() {
+  return 1 + (gameState.prestige * 0.25);
+}
 
 function getBuffMultiplier(statId) {
   let multiplier = 1;
@@ -1003,7 +1009,7 @@ function getAcademyBonus() {
   return INFRASTRUCTURE.find(i => i.id === 'academy').levels[level - 1].bonus;
 }
 
-// ИСПРАВЛЕНО: корректный расчет пассивных фанатов (только от активного стадиона)
+// ИСПРАВЛЕНО: корректный расчет (только от активного стадиона)
 function getFansPerSecond() {
   if (!gameState.activeStadium) return 0;
   const stadium = STADIUMS.find(s => s.id === gameState.activeStadium);
@@ -1035,7 +1041,7 @@ function getTotalSkill() {
   return total;
 }
 
-// ИСПРАВЛЕНО: корректный расчет пассивного дохода
+// ИСПРАВЛЕНО: корректный расчет дохода
 function getPassiveIncome() {
   let total = 0;
   HARDWARE.forEach(h => { 
@@ -1052,6 +1058,13 @@ function hasActiveBuff(serviceId) {
     if (buffId.startsWith(serviceId + '_') && gameState.activeBuffs[buffId].expiresAt > now) return true;
   }
   return false;
+}
+
+// ИСПРАВЛЕНО: проверка требований к престижу
+function canPrestige() {
+  const hasEnoughFans = gameState.totalFansEarned >= CONFIG.prestigeThreshold;
+  const hasMinLeague = gameState.leagueLevel >= CONFIG.prestigeMinLeague;
+  return hasEnoughFans && hasMinLeague;
 }
 
 function updateHeaderUI() {
@@ -1111,7 +1124,7 @@ function startEnergyRegen() {
   }, CONFIG.energyRegenMs);
 }
 
-// ИСПРАВЛЕНО: корректное начисление пассивных фанатов
+// ИСПРАВЛЕНО: корректное начисление фанатов
 function startFansIncome() {
   if (fansIncomeInterval) clearInterval(fansIncomeInterval);
   fansIncomeInterval = setInterval(() => {
@@ -1146,7 +1159,7 @@ function renderServices() {
     const canAfford = gameState.energy >= service.cost;
     const hasBuff = hasActiveBuff(service.id);
     const isDisabled = !canAfford || hasBuff;
-    return `<button data-service="${service.id}" class="service-btn press-effect p-3 rounded-lg border transition-all ${isDisabled ? 'border-tg-border/40 bg-tg-bg/20 opacity-50 cursor-not-allowed' : 'border-tg-border bg-tg-bg/40 hover:border-football-green'}" ${isDisabled ? 'disabled' : ''}><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-${service.color} to-${service.color === 'football-gold' ? 'yellow-600' : service.color === 'football-red' ? 'red-700' : service.color === 'football-blue' ? 'blue-700' : 'football-dark'} flex items-center justify-center mb-2 mx-auto"><i data-lucide="${service.icon}" class="w-4 h-4 text-white"></i></div><div class="text-[11px] font-bold text-center mb-0.5">${service.name}</div><div class="text-[9px] text-tg-muted text-center">${service.desc}</div><div class="text-[10px] text-football-green text-center mt-1 font-bold">${hasBuff ? 'Активен' : '−' + service.cost + ' ⚡'}</div></button>`;
+    return `<button data-service="${service.id}" class="service-btn press-effect p-3 rounded-lg border transition-all ${isDisabled ? 'border-tg-border/40 bg-tg-bg/20 opacity-50 cursor-not-allowed' : 'border-tg-border bg-tg-bg/40 hover:border-football-green'}" ${isDisabled ? 'disabled' : ''}><div class="w-8 h-8 rounded-lg bg-gradient-to-br from-${service.color} to-${service.color === 'football-gold' ? 'yellow-600' : service.color === 'football-red' ? 'red-700' : service.color === 'football-blue' ? 'blue-700' : 'football-dark'} flex items-center justify-center mb-2 mx-auto"><i data-lucide="${service.icon}" class="w-4 h-4 text-white"></i></div><div class="text-[11px] font-bold text-center mb-0.5">${service.name}</div><div class="text-[9px] text-tg-muted text-center">${service.desc}</div><div class="text-[10px] text-football-green text-center mt-1 font-bold">${hasBuff ? 'Активен' : '−' + service.cost + ' '}</div></button>`;
   }).join('');
   container.querySelectorAll('.service-btn:not([disabled])').forEach(btn => { btn.addEventListener('click', () => useService(btn.dataset.service)); });
 }
@@ -1238,7 +1251,7 @@ function renderHardware() {
   container.querySelectorAll('.buy-hw-btn').forEach(btn => { btn.addEventListener('click', () => buyHardware(btn.dataset.hw)); });
 }
 
-// ИСПРАВЛЕНО: можно иметь только один активный стадион
+// ИСПРАВЛЕНО: только один активный стадион
 function renderStadiums() {
   const container = document.getElementById('stadiumsList');
   container.innerHTML = STADIUMS.map(stadium => {
@@ -1275,7 +1288,6 @@ function renderStadiums() {
   });
 }
 
-// ИСПРАВЛЕНО: активация только одного стадиона
 function activateStadium(stadiumId) {
   if (!gameState.stadiums[stadiumId]) {
     alert('Сначала купи этот стадион!');
@@ -1325,12 +1337,60 @@ function renderInfrastructure() {
   }, 0);
 }
 
+// ИСПРАВЛЕНО: сложная проверка престижа
 function renderPrestige() {
   const container = document.getElementById('prestigeSection');
-  const canPrestige = gameState.totalFansEarned >= CONFIG.prestigeThreshold;
-  const nextPrestigeBonus = (gameState.prestige + 1) * 10;
-  container.innerHTML = `<div class="text-center mb-3"><div class="text-3xl font-bold text-football-gold mb-1">⭐ ${gameState.prestige}</div><div class="text-xs text-tg-muted">Уровень престижа</div></div><div class="text-xs text-tg-muted mb-3 text-center">Текущий бонус: <span class="text-football-green font-bold">+${gameState.prestige * 10}%</span> к доходу</div>${canPrestige ? `<button id="prestigeBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold">🔄 Престиж (+${nextPrestigeBonus}% бонус)</button><div class="text-[10px] text-tg-muted text-center mt-2">Сбросит навыки и монеты, но даст постоянный бонус</div>` : `<div class="text-center py-3 bg-tg-bg/40 rounded-lg"><div class="text-xs text-tg-muted">Нужно ещё</div><div class="text-sm font-bold text-football-gold">${formatNumber(CONFIG.prestigeThreshold - gameState.totalFansEarned)} фанатов</div></div>`}`;
-  if (canPrestige) document.getElementById('prestigeBtn').addEventListener('click', doPrestige);
+  const canDoPrestige = canPrestige();
+  const nextPrestigeBonus = (gameState.prestige + 1) * 25;
+  const league = getCurrentLeague();
+  
+  let requirementsText = '';
+  if (!canDoPrestige) {
+    const fansNeeded = CONFIG.prestigeThreshold - gameState.totalFansEarned;
+    const leagueNeeded = CONFIG.prestigeMinLeague - gameState.leagueLevel;
+    
+    requirementsText = `<div class="text-[10px] text-tg-muted mt-2 space-y-1">
+      <div class="${fansNeeded <= 0 ? 'text-football-green' : 'text-football-red'}">
+        ${fansNeeded <= 0 ? '✓' : '✗'} Фанаты: ${formatNumber(gameState.totalFansEarned)} / ${formatNumber(CONFIG.prestigeThreshold)}
+      </div>
+      <div class="${leagueNeeded <= 0 ? 'text-football-green' : 'text-football-red'}">
+        ${leagueNeeded <= 0 ? '✓' : '✗'} Лига: ${league.name} ${leagueNeeded > 0 ? `(нужна ${LEAGUES[CONFIG.prestigeMinLeague].name})` : ''}
+      </div>
+    </div>`;
+  }
+  
+  container.innerHTML = `
+    <div class="text-center mb-3">
+      <div class="text-3xl font-bold text-football-gold mb-1">⭐ ${gameState.prestige}</div>
+      <div class="text-xs text-tg-muted">Уровень престижа</div>
+    </div>
+    <div class="text-xs text-tg-muted mb-3 text-center">
+      Текущий бонус: <span class="text-football-green font-bold">+${gameState.prestige * 25}%</span> к доходу
+    </div>
+    ${requirementsText}
+    ${canDoPrestige ? `
+      <button id="prestigeBtn" class="btn-play press-effect w-full py-3 rounded-xl text-white font-bold animate-pulse-slow">
+        🏆 Престиж ${gameState.prestige + 1} (+${nextPrestigeBonus}% бонус)
+      </button>
+      <div class="text-[10px] text-tg-muted text-center mt-2">
+        Сбросит навыки и монеты, но даст постоянный бонус
+      </div>
+    ` : `
+      <div class="text-center py-3 bg-tg-bg/40 rounded-lg border border-tg-border">
+        <div class="text-xs text-tg-muted mb-1">Требования для престижа:</div>
+        <div class="text-sm font-bold text-football-red">
+          ${formatNumber(CONFIG.prestigeThreshold)} фанатов + ${LEAGUES[CONFIG.prestigeMinLeague].name}
+        </div>
+      </div>
+    `}
+  `;
+  
+  if (canDoPrestige) {
+    setTimeout(() => {
+      const btn = document.getElementById('prestigeBtn');
+      if (btn) btn.addEventListener('click', doPrestige);
+    }, 0);
+  }
 }
 
 function renderAchievements() {
@@ -1377,7 +1437,6 @@ function buyHardware(hwId) {
   if (window.haptic) window.haptic('light');
 }
 
-// ИСПРАВЛЕНО: покупка стадиона с проверкой
 function buyStadium(stadiumId) {
   const stadium = STADIUMS.find(s => s.id === stadiumId);
   if (!stadium) return;
@@ -1388,7 +1447,6 @@ function buyStadium(stadiumId) {
   if (gameState.coins < stadium.cost) return;
   gameState.coins -= stadium.cost;
   gameState.stadiums[stadiumId] = true;
-  // Если это первый стадион, активируем его автоматически
   if (!gameState.activeStadium) {
     gameState.activeStadium = stadiumId;
   }
@@ -1521,24 +1579,32 @@ function calculateMatchResult() {
   return { result, ...rewards[result] };
 }
 
-// ИСПРАВЛЕНО: баг с бесконечным престижем
+// ИСПРАВЛЕНО: сложная проверка и хорошая награда
 function doPrestige() {
-  if (gameState.totalFansEarned < CONFIG.prestigeThreshold) {
-    alert('Недостаточно фанатов для престижа!');
+  if (!canPrestige()) {
+    const league = getCurrentLeague();
+    alert(`❌ Недостаточно требований для престижа!\n\n📊 Твои показатели:\n• Фанаты: ${formatNumber(gameState.totalFansEarned)} / ${formatNumber(CONFIG.prestigeThreshold)}\n• Лига: ${league.name} (нужна Легендарная+)\n\n Требования:\n• 1,000,000 фанатов\n• Легендарная лига или выше`);
     return;
   }
-  if (!confirm('Престиж сбросит навыки и монеты, но даст +10% к доходу навсегда. Продолжить?')) return;
+  
+  if (!confirm(`🏆 ПРЕСТИЖ ${gameState.prestige + 1}\n\n⚠️ Это действие:\n• Сбросит монеты до 100\n• Сбросит все навыки до 0\n• Сохранит фанаты и лигу\n\n🎁 Награда:\n• +25% к ВСЕМУ доходу\n• Уникальная иконка\n• Приоритет в топе\n\nПродолжить?`)) return;
+  
   gameState.prestige++;
   gameState.coins = 100;
   gameState.characteristics = { stamina: 0, strength: 0, dribbling: 0, shotPower: 0, technique: 0, speed: 0 };
+  
   saveGame();
   renderSkills();
   renderCharacteristics();
   renderPrestige();
   checkAchievements();
   updateHeaderUI();
+  
   if (window.hapticSuccess) window.hapticSuccess();
-  alert(`🎉 Престиж ${gameState.prestige} достигнут! Бонус: +${gameState.prestige * 10}% к доходу!`);
+  
+  setTimeout(() => {
+    alert(`🎉 ПРЕСТИЖ ${gameState.prestige} ПОЛУЧЕН!\n\n✨ Твой бонус: +${gameState.prestige * 25}% к доходу\n\nТы стал элитным игроком!`);
+  }, 500);
 }
 
 function checkAchievements() {
@@ -1714,7 +1780,7 @@ function claimOfflineProgress() {
   updateHeaderUI();
   document.getElementById('offlineModal').classList.add('hidden');
   document.getElementById('offlineModal').classList.remove('flex');
-  showFloatingNumber(document.body, `+${formatCoins(earned)} 💰`);
+  showFloatingNumber(document.body, `+${formatCoins(earned)} `);
   if (window.hapticSuccess) window.hapticSuccess();
 }
 
@@ -1819,7 +1885,7 @@ function finishPenaltyGame(score) {
   }, 1000);
 }
 
-// ИСПРАВЛЕНО: дриблинг - ограничено количество фишек и энергия
+// ИСПРАВЛЕНО: ограничено количество фишек
 function startDribblingGame() {
   const modal = document.getElementById('dribblingModal');
   const zone = document.getElementById('dribblingZone');
@@ -1833,7 +1899,7 @@ function startDribblingGame() {
   
   let score = 0;
   let attempts = 0;
-  const maxAttempts = 15; // Максимум 15 попыток
+  const maxAttempts = 15;
   const targetScore = 10;
   targetEl.textContent = targetScore;
   scoreEl.textContent = '0';
@@ -1842,7 +1908,6 @@ function startDribblingGame() {
   let coneTimeout = null;
   
   function spawnCone() {
-    // Очищаем старый таймер если есть
     if (coneTimeout) clearTimeout(coneTimeout);
     
     if (attempts >= maxAttempts || score >= targetScore) {
@@ -1868,7 +1933,6 @@ function startDribblingGame() {
       }, 200);
     });
     
-    // Фишка исчезает через 2 секунды
     coneTimeout = setTimeout(() => {
       if (cone.parentNode) {
         attempts++;
@@ -1885,7 +1949,7 @@ function finishDribblingGame(score) {
   const closeBtn = document.getElementById('closeDribblingBtn');
   closeBtn.classList.remove('hidden');
   const won = score >= 10;
-  const energyReward = won ? 20 : 10; // Фиксированная награда
+  const energyReward = won ? 20 : 10;
   const coinsReward = won ? randInt(300, 1500) : randInt(100, 500);
   
   setTimeout(() => {
@@ -1961,7 +2025,7 @@ function finishGoalkeeperGame(score) {
 }
 
 function completeMinigame(energy, coins, message) {
-  gameState.energy = Math.min(CONFIG.baseMaxEnergy + 50, gameState.energy + energy); // Макс +50 сверх лимита
+  gameState.energy = Math.min(CONFIG.baseMaxEnergy + 50, gameState.energy + energy);
   gameState.coins += coins;
   gameState.lastMinigameTime = Date.now();
   saveGame();
@@ -2101,7 +2165,8 @@ function init() {
     renderLocalLeaderboard();
   }
   
-  console.log('%c⚽ Football Tycoon v11 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
+  console.log('%c⚽ Football Tycoon v12 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
+  console.log('%cВсе престижи сброшены до 0', 'color: #fbbf24; font-size: 12px;');
 }
 
 const origRenderCharacteristics = renderCharacteristics;
