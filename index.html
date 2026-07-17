@@ -98,8 +98,9 @@ tailwind.config = {
   .is-developer .developer-only-flex { display: flex; }
   .contact-btn { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border: 1px solid #a855f7; transition: all 0.2s ease; }
   .contact-btn:active { transform: scale(0.96); }
-  .stadium-active { border: 2px solid #10b981; background: rgba(16, 185, 129, 0.1); }
+  .stadium-owned { border: 2px solid #3b82f6; background: rgba(59, 130, 246, 0.1); }
   .prestige-locked { opacity: 0.6; }
+  .suspicious-alert { animation: pulse 2s infinite; border: 2px solid #ef4444; }
 </style>
 </head>
 
@@ -211,7 +212,7 @@ tailwind.config = {
       </div>
 
       <div class="mb-4">
-        <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="building-2" class="w-4 h-4 text-football-blue"></i>Стадионы (выбери один)</h3>
+        <h3 class="text-sm font-bold text-tg-muted uppercase tracking-wider mb-2 flex items-center gap-2"><i data-lucide="building-2" class="w-4 h-4 text-football-blue"></i>Стадионы (все работают)</h3>
         <div id="stadiumsList" class="space-y-2"></div>
       </div>
 
@@ -309,7 +310,7 @@ tailwind.config = {
         </div>
         <div class="countdown-timer rounded-lg p-2 text-center">
           <div class="text-[10px] text-tg-muted">До конца сезона:</div>
-          <div id="seasonTimer" class="text-lg font-bold text-football-red tabular-nums">5д 00:00:00</div>
+          <div id="seasonTimer" class="text-lg font-bold text-football-red tabular-nums">120:00:00</div>
         </div>
       </div>
 
@@ -483,7 +484,8 @@ tailwind.config = {
 </div>
 
 <script>
-const DEVELOPER_USER_ID = 'ВСТАВЬ_СЮДА_СВОЙ_ID';
+// ========== ИСПРАВЛЕНО: правильный ID разработчика ==========
+const DEVELOPER_USER_ID = '988679203';
 const DEVELOPER_USERNAME = 'hertyln';
 
 const firebaseConfig = {
@@ -505,8 +507,10 @@ try {
   firebaseReady = true;
 } catch (error) { console.error('Firebase error:', error); }
 
-// ========== ИСПРАВЛЕННЫЙ ТАЙМЕР (единый для всех - 5 дней) ==========
-const SEASON_START_TIMESTAMP = Date.now(); // Начинаем отсчет СЕЙЧАС
+// ========== ИСПРАВЛЕНО: синхронизированный таймер (120 часов = 5 дней) ==========
+// Фиксированная дата начала: 1 января 2025, 00:00:00 UTC
+const SEASON_START_TIMESTAMP = new Date('2025-01-01T00:00:00Z').getTime();
+const SEASON_DURATION_MS = 120 * 60 * 60 * 1000; // 120 часов
 
 const CONFIG = {
   matchCost: 50,
@@ -515,12 +519,12 @@ const CONFIG = {
   matchDurationMs: 2500,
   passiveIncomeMs: 1000,
   autoSaveMs: 5000,
-  prestigeThreshold: 1000000, // 1 МИЛЛИОН фанатов
-  prestigeMinLeague: 6, // Минимум Легендарная лига
+  prestigeThreshold: 1000000,
+  prestigeMinLeague: 6,
   offlineMaxHours: 8,
   buffDurationMs: 3600000,
   minigameCooldownMs: 300000,
-  seasonDurationMs: 5 * 24 * 60 * 60 * 1000 // 5 дней
+  seasonDurationMs: SEASON_DURATION_MS
 };
 
 function getSeasonStart() {
@@ -529,16 +533,15 @@ function getSeasonStart() {
 
 function getSeasonTimeLeft() {
   const start = getSeasonStart();
-  const end = start + CONFIG.seasonDurationMs;
+  const end = start + SEASON_DURATION_MS;
   return Math.max(0, end - Date.now());
 }
 
 function formatTimeLeft(ms) {
-  const days = Math.floor(ms / (1000 * 60 * 60 * 24));
-  const hours = Math.floor((ms % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+  const totalHours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   const seconds = Math.floor((ms % (1000 * 60)) / 1000);
-  return `${days}д ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  return `${totalHours.toString().padStart(3, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 }
 
 const LEAGUES = [
@@ -576,120 +579,40 @@ const HARDWARE = [
   { id: 'agency', name: 'Агентство', icon: 'building', baseCost: 100000, income: 1000, color: 'from-football-purple to-purple-700' }
 ];
 
-// ИСПРАВЛЕНО: снижен доход (макс 15к фанатов/час)
+// ========== ИСПРАВЛЕНО: больше стадионов, все работают, макс 10к фанатов/час ==========
 const STADIUMS = [
-  { 
-    id: 'local', 
-    name: 'Локальный стадион', 
-    icon: 'home',
-    desc: 'Маленький стадион в твоём районе',
-    fansPerHour: 500,
-    cost: 50000,
-    color: 'from-gray-500 to-gray-700'
-  },
-  { 
-    id: 'otkritie', 
-    name: 'Открытие Арена', 
-    icon: 'building',
-    desc: 'Современный стадион в Москве',
-    fansPerHour: 1500,
-    cost: 200000,
-    color: 'from-football-red to-red-700'
-  },
-  { 
-    id: 'luzhniki', 
-    name: 'Лужники', 
-    icon: 'building-2',
-    desc: 'Легендарный стадион России',
-    fansPerHour: 3000,
-    cost: 1000000,
-    color: 'from-football-blue to-blue-700'
-  },
-  { 
-    id: 'santiagobernabeu', 
-    name: 'Сантьяго Бернабеу', 
-    icon: 'crown',
-    desc: 'Дом мадридского Реала',
-    fansPerHour: 5000,
-    cost: 5000000,
-    color: 'from-football-gold to-yellow-600'
-  },
-  { 
-    id: 'oldtrafford', 
-    name: 'Олд Траффорд', 
-    icon: 'castle',
-    desc: 'Театр мечты Манчестер Юнайтед',
-    fansPerHour: 7500,
-    cost: 15000000,
-    color: 'from-football-red to-red-800'
-  },
-  { 
-    id: 'allianzarena', 
-    name: 'Альянц Арена', 
-    icon: 'star',
-    desc: 'Современная арена Баварии',
-    fansPerHour: 10000,
-    cost: 30000000,
-    color: 'from-football-blue to-blue-800'
-  },
-  { 
-    id: 'wembley', 
-    name: 'Уэмбли', 
-    icon: 'trophy',
-    desc: 'Национальный стадион Англии',
-    fansPerHour: 15000,
-    cost: 60000000,
-    color: 'from-football-purple to-purple-800'
-  }
+  { id: 'local', name: 'Локальный стадион', icon: 'home', desc: 'Маленький стадион', fansPerHour: 500, cost: 100000, color: 'from-gray-500 to-gray-700' },
+  { id: 'school', name: 'Школьный стадион', icon: 'graduation-cap', desc: 'Стадион при школе', fansPerHour: 1000, cost: 250000, color: 'from-football-green to-football-dark' },
+  { id: 'city', name: 'Городской стадион', icon: 'building', desc: 'Стадион в центре города', fansPerHour: 2000, cost: 750000, color: 'from-football-blue to-blue-700' },
+  { id: 'regional', name: 'Региональная арена', icon: 'map', desc: 'Арена регионального уровня', fansPerHour: 3500, cost: 2000000, color: 'from-football-purple to-purple-700' },
+  { id: 'national', name: 'Национальный стадион', icon: 'flag', desc: 'Стадион национальной лиги', fansPerHour: 5000, cost: 5000000, color: 'from-football-gold to-yellow-600' },
+  { id: 'olympic', name: 'Олимпийский комплекс', icon: 'trophy', desc: 'Олимпийский стадион', fansPerHour: 7500, cost: 15000000, color: 'from-football-red to-red-700' },
+  { id: 'legendary', name: 'Легендарная арена', icon: 'crown', desc: 'Легендарный стадион', fansPerHour: 10000, cost: 50000000, color: 'from-pink-500 to-pink-700' }
 ];
 
 const INFRASTRUCTURE = [
-  { 
-    id: 'stadium', 
-    name: 'Стадион', 
-    icon: 'building-2', 
-    desc: 'Увеличивает доход от матчей',
-    levels: [
-      { cost: 100000, bonus: 0.15, desc: '+15% монет от матчей' },
-      { cost: 500000, bonus: 0.25, desc: '+25% монет от матчей' },
-      { cost: 2000000, bonus: 0.4, desc: '+40% монет от матчей' },
-      { cost: 10000000, bonus: 0.6, desc: '+60% монет от матчей' },
-      { cost: 50000000, bonus: 1.0, desc: '+100% монет от матчей' }
-    ]
-  },
-  { 
-    id: 'academy', 
-    name: 'Академия', 
-    icon: 'graduation-cap',
-    desc: 'Улучшает навыки после матчей',
-    levels: [
-      { cost: 1000000, bonus: 1, desc: '+1 к случайному навыку после матча' },
-      { cost: 5000000, bonus: 2, desc: '+2 к случайному навыку после матча' },
-      { cost: 25000000, bonus: 5, desc: '+5 к случайному навыку после матча' }
-    ]
-  },
-  { 
-    id: 'scouts', 
-    name: 'Скауты', 
-    icon: 'search', 
-    desc: 'Повышает шанс победы',
-    levels: [
-      { cost: 500000, bonus: 0.05, desc: '+5% к победе' },
-      { cost: 2000000, bonus: 0.1, desc: '+10% к победе' },
-      { cost: 10000000, bonus: 0.15, desc: '+15% к победе' }
-    ]
-  },
-  { 
-    id: 'sponsors', 
-    name: 'Спонсоры', 
-    icon: 'briefcase', 
-    desc: 'Даёт пассивный доход монет',
-    levels: [
-      { cost: 1000000, bonus: 500, desc: '+$500/сек' },
-      { cost: 5000000, bonus: 2000, desc: '+$2000/сек' },
-      { cost: 25000000, bonus: 10000, desc: '+$10000/сек' }
-    ]
-  }
+  { id: 'stadium', name: 'Стадион', icon: 'building-2', desc: 'Увеличивает доход от матчей', levels: [
+    { cost: 100000, bonus: 0.15, desc: '+15% монет от матчей' },
+    { cost: 500000, bonus: 0.25, desc: '+25% монет от матчей' },
+    { cost: 2000000, bonus: 0.4, desc: '+40% монет от матчей' },
+    { cost: 10000000, bonus: 0.6, desc: '+60% монет от матчей' },
+    { cost: 50000000, bonus: 1.0, desc: '+100% монет от матчей' }
+  ]},
+  { id: 'academy', name: 'Академия', icon: 'graduation-cap', desc: 'Улучшает навыки после матчей', levels: [
+    { cost: 1000000, bonus: 1, desc: '+1 к случайному навыку после матча' },
+    { cost: 5000000, bonus: 2, desc: '+2 к случайному навыку после матча' },
+    { cost: 25000000, bonus: 5, desc: '+5 к случайному навыку после матча' }
+  ]},
+  { id: 'scouts', name: 'Скауты', icon: 'search', desc: 'Повышает шанс победы', levels: [
+    { cost: 500000, bonus: 0.05, desc: '+5% к победе' },
+    { cost: 2000000, bonus: 0.1, desc: '+10% к победе' },
+    { cost: 10000000, bonus: 0.15, desc: '+15% к победе' }
+  ]},
+  { id: 'sponsors', name: 'Спонсоры', icon: 'briefcase', desc: 'Даёт пассивный доход монет', levels: [
+    { cost: 1000000, bonus: 500, desc: '+$500/сек' },
+    { cost: 5000000, bonus: 2000, desc: '+$2000/сек' },
+    { cost: 25000000, bonus: 10000, desc: '+$10000/сек' }
+  ]}
 ];
 
 const ACHIEVEMENTS = [
@@ -736,8 +659,8 @@ let gameState = {
   coins: 100, fans: 0, totalFansEarned: 0, energy: CONFIG.baseMaxEnergy,
   characteristics: { stamina: 0, strength: 0, dribbling: 0, shotPower: 0, technique: 0, speed: 0 },
   hardware: { phone: 0, camera: 0, studio: 0, pro: 0, agency: 0 },
-  stadiums: { local: false, otkritie: false, luzhniki: false, santiagobernabeu: false, oldtrafford: false, allianzarena: false, wembley: false },
-  activeStadium: null,
+  // ИСПРАВЛЕНО: все стадионы работают
+  stadiums: { local: false, school: false, city: false, regional: false, national: false, olympic: false, legendary: false },
   infrastructure: { stadium: 0, academy: 0, scouts: 0, sponsors: 0 },
   leagueLevel: 0, prestige: 0,
   completedAchievements: [],
@@ -745,11 +668,12 @@ let gameState = {
   activeBuffs: {},
   lastMinigameTime: 0,
   lastSaveTime: Date.now(),
+  lastFansCheck: 0, // Для проверки на читы
   stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, recentMatches: [] },
   username: 'Player', userId: null, lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v12';
+const SAVE_KEY = 'football_tycoon_save_v13';
 let tg = null;
 let leaderboardUnsubscribe = null;
 let passiveIncomeInterval = null;
@@ -758,9 +682,10 @@ let energyRegenInterval = null;
 let autoSaveInterval = null;
 let buffUpdateInterval = null;
 let seasonTimerInterval = null;
+let cheatCheckInterval = null;
 
 function isDeveloper() {
-  return gameState.userId && gameState.userId === DEVELOPER_USER_ID;
+  return gameState.userId === DEVELOPER_USER_ID;
 }
 
 function initTelegram() {
@@ -778,6 +703,7 @@ function initTelegram() {
   
   if (isDeveloper()) {
     document.body.classList.add('is-developer');
+    console.log('%c🔧 DEVELOPER MODE ACTIVATED', 'color: #10b981; font-size: 14px; font-weight: bold;');
   }
   
   window.haptic = (type = 'light') => { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(type); else if (navigator.vibrate) navigator.vibrate(20); };
@@ -785,6 +711,7 @@ function initTelegram() {
   if (tg.BackButton) tg.BackButton.onClick(() => switchTab('match'));
 }
 
+// ========== ИСПРАВЛЕНО: сброс стадионов всем игрокам ==========
 async function syncWithFirebase() {
   if (!gameState.userId || !firebaseReady) return;
   try {
@@ -808,20 +735,16 @@ async function syncWithFirebase() {
           gameState.hardware[key] = Math.max(gameState.hardware[key] || 0, data.hardware[key] || 0);
         }
       }
-      if (data.stadiums) {
-        for (let key in gameState.stadiums) {
-          gameState.stadiums[key] = data.stadiums[key] || false;
-        }
-      }
-      gameState.activeStadium = data.activeStadium || null;
+      // Сброс стадионов - все false
+      gameState.stadiums = { local: false, school: false, city: false, regional: false, national: false, olympic: false, legendary: false };
+      
       if (data.infrastructure) {
         for (let key in gameState.infrastructure) {
           gameState.infrastructure[key] = Math.max(gameState.infrastructure[key] || 0, data.infrastructure[key] || 0);
         }
       }
       gameState.leagueLevel = Math.max(gameState.leagueLevel || 0, data.leagueLevel || 0);
-      // ИСПРАВЛЕНО: сброс престижей до 0
-      gameState.prestige = 0;
+      gameState.prestige = 0; // Сброс престижей
       gameState.completedAchievements = data.completedAchievements || gameState.completedAchievements || [];
       gameState.dailyStreak = Math.max(gameState.dailyStreak || 0, data.dailyStreak || 0);
       gameState.lastDailyReward = Math.max(gameState.lastDailyReward || 0, data.lastDailyReward || 0);
@@ -833,7 +756,7 @@ async function syncWithFirebase() {
         gameState.stats.losses = Math.max(gameState.stats.losses || 0, data.stats.losses || 0);
       }
       
-      console.log('✅ Данные загружены из Firebase');
+      console.log('✅ Данные загружены из Firebase (стадионы сброшены)');
     } else {
       await playerRef.set({
         username: gameState.username,
@@ -844,10 +767,9 @@ async function syncWithFirebase() {
         characteristics: { ...gameState.characteristics },
         hardware: { ...gameState.hardware },
         stadiums: { ...gameState.stadiums },
-        activeStadium: gameState.activeStadium,
         infrastructure: { ...gameState.infrastructure },
         leagueLevel: gameState.leagueLevel,
-        prestige: 0, // Сброс престижа
+        prestige: 0,
         completedAchievements: gameState.completedAchievements,
         dailyStreak: gameState.dailyStreak,
         lastDailyReward: gameState.lastDailyReward,
@@ -879,7 +801,6 @@ async function updatePlayerData() {
       characteristics: { ...gameState.characteristics },
       hardware: { ...gameState.hardware },
       stadiums: { ...gameState.stadiums },
-      activeStadium: gameState.activeStadium,
       infrastructure: { ...gameState.infrastructure },
       leagueLevel: gameState.leagueLevel,
       prestige: gameState.prestige,
@@ -897,6 +818,63 @@ async function updatePlayerData() {
     gameState.lastSync = Date.now();
   } catch (error) { 
     console.error('❌ Ошибка обновления:', error); 
+  }
+}
+
+// ========== ИСПРАВЛЕНО: проверка на подозрительную активность ==========
+function checkForSuspiciousActivity() {
+  const now = Date.now();
+  const timeDiff = (now - (gameState.lastFansCheck || now)) / 1000; // в секундах
+  
+  if (gameState.lastFansCheck && timeDiff > 0) {
+    const fansGained = gameState.fans - (gameState.lastFansCheckValue || 0);
+    const fansPerSecond = fansGained / timeDiff;
+    
+    // Подозрительно: больше 1000 фанатов в секунду
+    if (fansPerSecond > 1000) {
+      notifyDeveloper(`⚠️ ПОДОЗРИТЕЛЬНАЯ АКТИВНОСТЬ!\n\nИгрок: ${gameState.username} (ID: ${gameState.userId})\nСкорость: ${Math.floor(fansPerSecond)} фанатов/сек\nВсего фанатов: ${formatNumber(gameState.fans)}\nВремя: ${new Date().toLocaleString()}`);
+      console.warn('%c️ SUSPICIOUS ACTIVITY DETECTED!', 'color: #ef4444; font-size: 14px; font-weight: bold;');
+    }
+    
+    // Подозрительно: больше 100 матчей за минуту
+    const recentMatches = gameState.stats.recentMatches.filter(m => now - m.time < 60000);
+    if (recentMatches.length > 100) {
+      notifyDeveloper(`⚠️ ПОДОЗРИТЕЛЬНАЯ АКТИВНОСТЬ!\n\nИгрок: ${gameState.username} (ID: ${gameState.userId})\nМатчей за минуту: ${recentMatches.length}\nВсего фанатов: ${formatNumber(gameState.fans)}`);
+    }
+  }
+  
+  gameState.lastFansCheck = now;
+  gameState.lastFansCheckValue = gameState.fans;
+}
+
+function notifyDeveloper(message) {
+  if (isDeveloper()) {
+    // Показываем уведомление разработчику
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'fixed top-4 left-4 right-4 bg-football-red/90 text-white p-4 rounded-xl z-50 suspicious-alert';
+    alertDiv.innerHTML = `
+      <div class="flex items-center gap-2 mb-2">
+        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+        <span class="font-bold">Подозрительная активность!</span>
+      </div>
+      <div class="text-sm whitespace-pre-line">${message}</div>
+    `;
+    document.body.appendChild(alertDiv);
+    if (window.lucide) lucide.createIcons();
+    
+    setTimeout(() => {
+      alertDiv.remove();
+    }, 10000);
+    
+    // Отправляем в Firebase для логов
+    if (firebaseReady) {
+      database.ref('suspicious_activity').push({
+        userId: gameState.userId,
+        username: gameState.username,
+        message: message,
+        timestamp: Date.now()
+      });
+    }
   }
 }
 
@@ -950,12 +928,14 @@ function loadGame() {
       gameState = { ...gameState, ...parsed };
       gameState.characteristics = { ...gameState.characteristics, ...(parsed.characteristics || {}) };
       gameState.hardware = { ...gameState.hardware, ...(parsed.hardware || {}) };
-      gameState.stadiums = { ...gameState.stadiums, ...(parsed.stadiums || {}) };
-      gameState.activeStadium = parsed.activeStadium || null;
+      // Сброс стадионов при загрузке
+      gameState.stadiums = { local: false, school: false, city: false, regional: false, national: false, olympic: false, legendary: false };
       gameState.infrastructure = { ...gameState.infrastructure, ...(parsed.infrastructure || {}) };
       gameState.completedAchievements = parsed.completedAchievements || [];
       gameState.activeBuffs = parsed.activeBuffs || {};
       gameState.stats = { ...gameState.stats, ...(parsed.stats || {}) };
+      gameState.lastFansCheck = parsed.lastFansCheck || 0;
+      gameState.lastFansCheckValue = parsed.lastFansCheckValue || 0;
     }
   } catch (e) {}
 }
@@ -970,7 +950,6 @@ function getCurrentLeague() {
   return currentLeague;
 }
 
-// ИСПРАВЛЕНО: +25% за престиж
 function getPrestigeMultiplier() {
   return 1 + (gameState.prestige * 0.25);
 }
@@ -1009,19 +988,25 @@ function getAcademyBonus() {
   return INFRASTRUCTURE.find(i => i.id === 'academy').levels[level - 1].bonus;
 }
 
-// ИСПРАВЛЕНО: корректный расчет (только от активного стадиона)
+// ИСПРАВЛЕНО: все купленные стадионы работают
 function getFansPerSecond() {
-  if (!gameState.activeStadium) return 0;
-  const stadium = STADIUMS.find(s => s.id === gameState.activeStadium);
-  if (!stadium || !gameState.stadiums[stadium.id]) return 0;
-  return stadium.fansPerHour / 3600;
+  let total = 0;
+  STADIUMS.forEach(s => {
+    if (gameState.stadiums[s.id]) {
+      total += s.fansPerHour / 3600;
+    }
+  });
+  return total;
 }
 
 function getFansPerHour() {
-  if (!gameState.activeStadium) return 0;
-  const stadium = STADIUMS.find(s => s.id === gameState.activeStadium);
-  if (!stadium || !gameState.stadiums[stadium.id]) return 0;
-  return stadium.fansPerHour;
+  let total = 0;
+  STADIUMS.forEach(s => {
+    if (gameState.stadiums[s.id]) {
+      total += s.fansPerHour;
+    }
+  });
+  return total;
 }
 
 function getSkillCost(skillId, currentLevel) {
@@ -1041,7 +1026,6 @@ function getTotalSkill() {
   return total;
 }
 
-// ИСПРАВЛЕНО: корректный расчет дохода
 function getPassiveIncome() {
   let total = 0;
   HARDWARE.forEach(h => { 
@@ -1060,7 +1044,6 @@ function hasActiveBuff(serviceId) {
   return false;
 }
 
-// ИСПРАВЛЕНО: проверка требований к престижу
 function canPrestige() {
   const hasEnoughFans = gameState.totalFansEarned >= CONFIG.prestigeThreshold;
   const hasMinLeague = gameState.leagueLevel >= CONFIG.prestigeMinLeague;
@@ -1124,7 +1107,6 @@ function startEnergyRegen() {
   }, CONFIG.energyRegenMs);
 }
 
-// ИСПРАВЛЕНО: корректное начисление фанатов
 function startFansIncome() {
   if (fansIncomeInterval) clearInterval(fansIncomeInterval);
   fansIncomeInterval = setInterval(() => {
@@ -1176,6 +1158,7 @@ function renderRecentMatches() {
   }).join('');
 }
 
+// ИСПРАВЛЕНО: показ ID только разработчику
 function renderLeaderboard(players, myRank) {
   const container = document.getElementById('leaderboardList');
   document.getElementById('myRank').textContent = '#' + Math.min(myRank, 999);
@@ -1197,9 +1180,13 @@ function renderLeaderboard(players, myRank) {
     const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '' : `#${rank}`;
     const prize = prizes[rank] || '';
     
-    const usernameDisplay = developerMode 
-      ? `${player.username} (ID: ${player.userId})` 
-      : (isMe ? `${player.username} (ты)` : `Игрок #${rank}`);
+    // Показываем ID только разработчику
+    let usernameDisplay;
+    if (developerMode) {
+      usernameDisplay = `${player.username}\n<span class="text-[9px] text-tg-muted">ID: ${player.userId}</span>`;
+    } else {
+      usernameDisplay = isMe ? `${player.username} (ты)` : `Игрок #${rank}`;
+    }
     
     return `<div class="flex items-center gap-3 p-3 ${isMe ? 'bg-football-green/10 border-l-2 border-football-green' : ''}">
       <div class="w-8 h-8 rounded-lg ${rankClass} flex items-center justify-center font-bold text-sm flex-shrink-0">${medal}</div>
@@ -1251,30 +1238,27 @@ function renderHardware() {
   container.querySelectorAll('.buy-hw-btn').forEach(btn => { btn.addEventListener('click', () => buyHardware(btn.dataset.hw)); });
 }
 
-// ИСПРАВЛЕНО: только один активный стадион
+// ИСПРАВЛЕНО: все стадионы работают, показ купленных
 function renderStadiums() {
   const container = document.getElementById('stadiumsList');
   container.innerHTML = STADIUMS.map(stadium => {
     const owned = gameState.stadiums[stadium.id] || false;
-    const isActive = gameState.activeStadium === stadium.id;
     const canAfford = gameState.coins >= stadium.cost;
-    const isDisabled = owned && !isActive;
     
-    return `<div class="glass-card rounded-xl p-3 flex items-center gap-3 ${isActive ? 'stadium-active' : ''}">
+    return `<div class="glass-card rounded-xl p-3 flex items-center gap-3 ${owned ? 'stadium-owned' : ''}">
       <div class="w-11 h-11 rounded-lg bg-gradient-to-br ${stadium.color} flex items-center justify-center flex-shrink-0">
         <i data-lucide="${stadium.icon}" class="w-5 h-5 text-white"></i>
       </div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2">
           <div class="font-bold text-sm">${stadium.name}</div>
-          ${isActive ? '<span class="text-[10px] bg-football-green/20 text-football-green px-1.5 py-0.5 rounded">✓ Активен</span>' : ''}
+          ${owned ? '<span class="text-[10px] bg-football-green/20 text-football-green px-1.5 py-0.5 rounded">✓ Куплен</span>' : ''}
         </div>
         <div class="text-[11px] text-tg-muted">${stadium.desc}</div>
         <div class="text-[10px] text-football-blue mt-0.5">+${formatNumber(stadium.fansPerHour)} фанатов/час</div>
       </div>
       ${owned 
-        ? (isActive ? '<span class="text-[10px] text-football-green px-2 py-1.5 font-bold">Активен</span>' 
-                   : `<button data-stadium="${stadium.id}" class="activate-stadium-btn press-effect px-3 py-2 rounded-lg text-xs font-bold bg-football-blue/20 text-football-blue border border-football-blue/40 hover:bg-football-blue/30">Активировать</button>`)
+        ? '<span class="text-[10px] text-football-green px-2 py-1.5 font-bold">Работает</span>'
         : `<button data-stadium="${stadium.id}" class="buy-stadium-btn press-effect px-3 py-2 rounded-lg text-xs font-bold transition-all ${canAfford ? 'bg-football-blue/20 text-football-blue border border-football-blue/40 hover:bg-football-blue/30' : 'bg-tg-border/40 text-tg-muted cursor-not-allowed'}" ${canAfford ? '' : 'disabled'}>${formatCoins(stadium.cost)}</button>`
       }
     </div>`;
@@ -1283,23 +1267,23 @@ function renderStadiums() {
   container.querySelectorAll('.buy-stadium-btn:not([disabled])').forEach(btn => {
     btn.addEventListener('click', () => buyStadium(btn.dataset.stadium));
   });
-  container.querySelectorAll('.activate-stadium-btn').forEach(btn => {
-    btn.addEventListener('click', () => activateStadium(btn.dataset.stadium));
-  });
 }
 
-function activateStadium(stadiumId) {
-  if (!gameState.stadiums[stadiumId]) {
-    alert('Сначала купи этот стадион!');
+function buyStadium(stadiumId) {
+  const stadium = STADIUMS.find(s => s.id === stadiumId);
+  if (!stadium) return;
+  if (gameState.stadiums[stadiumId]) {
+    alert('Этот стадион уже куплен!');
     return;
   }
-  gameState.activeStadium = stadiumId;
+  if (gameState.coins < stadium.cost) return;
+  gameState.coins -= stadium.cost;
+  gameState.stadiums[stadiumId] = true;
   saveGame();
   renderStadiums();
   updateHeaderUI();
   if (window.haptic) window.haptic('light');
-  const stadium = STADIUMS.find(s => s.id === stadiumId);
-  showFloatingNumber(document.getElementById('stadiumsList'), `Активен: ${stadium.name}!`);
+  showFloatingNumber(document.getElementById('stadiumsList'), `+${formatNumber(stadium.fansPerHour)} фанатов/ч!`);
 }
 
 function renderPlatforms() {
@@ -1337,7 +1321,6 @@ function renderInfrastructure() {
   }, 0);
 }
 
-// ИСПРАВЛЕНО: сложная проверка престижа
 function renderPrestige() {
   const container = document.getElementById('prestigeSection');
   const canDoPrestige = canPrestige();
@@ -1435,26 +1418,6 @@ function buyHardware(hwId) {
   renderHardware();
   updateHeaderUI();
   if (window.haptic) window.haptic('light');
-}
-
-function buyStadium(stadiumId) {
-  const stadium = STADIUMS.find(s => s.id === stadiumId);
-  if (!stadium) return;
-  if (gameState.stadiums[stadiumId]) {
-    alert('Этот стадион уже куплен!');
-    return;
-  }
-  if (gameState.coins < stadium.cost) return;
-  gameState.coins -= stadium.cost;
-  gameState.stadiums[stadiumId] = true;
-  if (!gameState.activeStadium) {
-    gameState.activeStadium = stadiumId;
-  }
-  saveGame();
-  renderStadiums();
-  updateHeaderUI();
-  if (window.haptic) window.haptic('light');
-  showFloatingNumber(document.getElementById('stadiumsList'), `+${formatNumber(stadium.fansPerHour)} фанатов/ч!`);
 }
 
 function buyInfrastructure(infraId) {
@@ -1579,11 +1542,10 @@ function calculateMatchResult() {
   return { result, ...rewards[result] };
 }
 
-// ИСПРАВЛЕНО: сложная проверка и хорошая награда
 function doPrestige() {
   if (!canPrestige()) {
     const league = getCurrentLeague();
-    alert(`❌ Недостаточно требований для престижа!\n\n📊 Твои показатели:\n• Фанаты: ${formatNumber(gameState.totalFansEarned)} / ${formatNumber(CONFIG.prestigeThreshold)}\n• Лига: ${league.name} (нужна Легендарная+)\n\n Требования:\n• 1,000,000 фанатов\n• Легендарная лига или выше`);
+    alert(` Недостаточно требований для престижа!\n\n📊 Твои показатели:\n• Фанаты: ${formatNumber(gameState.totalFansEarned)} / ${formatNumber(CONFIG.prestigeThreshold)}\n• Лига: ${league.name} (нужна Легендарная+)\n\n Требования:\n• 1,000,000 фанатов\n• Легендарная лига или выше`);
     return;
   }
   
@@ -1809,11 +1771,22 @@ function updateMinigameCooldown() {
   }
 }
 
+// ИСПРАВЛЕНО: удаление старых обработчиков перед добавлением новых
 function startMinigame(type) {
   if (!canPlayMinigame()) {
     alert('Подожди кулдаун!');
     return;
   }
+  
+  // Удаляем все предыдущие обработчики
+  document.getElementById('penaltyBtn').replaceWith(document.getElementById('penaltyBtn').cloneNode(true));
+  document.getElementById('dribblingBtn').replaceWith(document.getElementById('dribblingBtn').cloneNode(true));
+  document.getElementById('goalkeeperBtn').replaceWith(document.getElementById('goalkeeperBtn').cloneNode(true));
+  
+  // Переназначаем обработчики
+  document.getElementById('penaltyBtn').addEventListener('click', () => startMinigame('penalty'));
+  document.getElementById('dribblingBtn').addEventListener('click', () => startMinigame('dribbling'));
+  document.getElementById('goalkeeperBtn').addEventListener('click', () => startMinigame('goalkeeper'));
   
   if (type === 'penalty') startPenaltyGame();
   else if (type === 'dribbling') startDribblingGame();
@@ -1885,7 +1858,6 @@ function finishPenaltyGame(score) {
   }, 1000);
 }
 
-// ИСПРАВЛЕНО: ограничено количество фишек
 function startDribblingGame() {
   const modal = document.getElementById('dribblingModal');
   const zone = document.getElementById('dribblingZone');
@@ -2094,6 +2066,11 @@ function startSeasonTimer() {
   updateSeasonTimer();
 }
 
+function startCheatCheck() {
+  if (cheatCheckInterval) clearInterval(cheatCheckInterval);
+  cheatCheckInterval = setInterval(checkForSuspiciousActivity, 30000); // Каждые 30 секунд
+}
+
 function init() {
   initTelegram();
   loadGame();
@@ -2144,6 +2121,7 @@ function init() {
   startAutoSave();
   startBuffUpdate();
   startSeasonTimer();
+  startCheatCheck();
   
   setInterval(updateMinigameCooldown, 1000);
   
@@ -2165,8 +2143,9 @@ function init() {
     renderLocalLeaderboard();
   }
   
-  console.log('%c⚽ Football Tycoon v12 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
-  console.log('%cВсе престижи сброшены до 0', 'color: #fbbf24; font-size: 12px;');
+  console.log('%c⚽ Football Tycoon v13 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
+  console.log('%cВсе стадионы сброшены, престижи сброшены', 'color: #fbbf24; font-size: 12px;');
+  console.log('%cСинхронизированный таймер: 120 часов', 'color: #3b82f6; font-size: 12px;');
 }
 
 const origRenderCharacteristics = renderCharacteristics;
