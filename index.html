@@ -179,7 +179,7 @@ tailwind.config = {
       </div>
 
       <button id="playMatchBtn" class="btn-play press-effect w-full py-4 rounded-xl text-white font-bold text-base flex items-center justify-center gap-2 mb-3">
-        <i data-lucide="play" class="w-5 h-5"></i><span>Сыграть матч</span><span class="ml-1 text-xs opacity-80">(−50 )</span>
+        <i data-lucide="play" class="w-5 h-5"></i><span>Сыграть матч</span><span class="ml-1 text-xs opacity-80">(−50 ⚡)</span>
       </button>
 
       <div class="glass-card rounded-xl p-4 mb-4">
@@ -484,7 +484,6 @@ tailwind.config = {
 </div>
 
 <script>
-// ========== ИСПРАВЛЕНО: правильный ID разработчика ==========
 const DEVELOPER_USER_ID = '988679203';
 const DEVELOPER_USERNAME = 'hertyln';
 
@@ -507,10 +506,8 @@ try {
   firebaseReady = true;
 } catch (error) { console.error('Firebase error:', error); }
 
-// ========== ИСПРАВЛЕНО: синхронизированный таймер (120 часов = 5 дней) ==========
-// Фиксированная дата начала: 1 января 2025, 00:00:00 UTC
 const SEASON_START_TIMESTAMP = new Date('2025-01-01T00:00:00Z').getTime();
-const SEASON_DURATION_MS = 120 * 60 * 60 * 1000; // 120 часов
+const SEASON_DURATION_MS = 120 * 60 * 60 * 1000;
 
 const CONFIG = {
   matchCost: 50,
@@ -527,16 +524,12 @@ const CONFIG = {
   seasonDurationMs: SEASON_DURATION_MS
 };
 
-function getSeasonStart() {
-  return SEASON_START_TIMESTAMP;
-}
-
+function getSeasonStart() { return SEASON_START_TIMESTAMP; }
 function getSeasonTimeLeft() {
   const start = getSeasonStart();
   const end = start + SEASON_DURATION_MS;
   return Math.max(0, end - Date.now());
 }
-
 function formatTimeLeft(ms) {
   const totalHours = Math.floor(ms / (1000 * 60 * 60));
   const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
@@ -579,7 +572,6 @@ const HARDWARE = [
   { id: 'agency', name: 'Агентство', icon: 'building', baseCost: 100000, income: 1000, color: 'from-football-purple to-purple-700' }
 ];
 
-// ========== ИСПРАВЛЕНО: больше стадионов, все работают, макс 10к фанатов/час ==========
 const STADIUMS = [
   { id: 'local', name: 'Локальный стадион', icon: 'home', desc: 'Маленький стадион', fansPerHour: 500, cost: 100000, color: 'from-gray-500 to-gray-700' },
   { id: 'school', name: 'Школьный стадион', icon: 'graduation-cap', desc: 'Стадион при школе', fansPerHour: 1000, cost: 250000, color: 'from-football-green to-football-dark' },
@@ -659,7 +651,6 @@ let gameState = {
   coins: 100, fans: 0, totalFansEarned: 0, energy: CONFIG.baseMaxEnergy,
   characteristics: { stamina: 0, strength: 0, dribbling: 0, shotPower: 0, technique: 0, speed: 0 },
   hardware: { phone: 0, camera: 0, studio: 0, pro: 0, agency: 0 },
-  // ИСПРАВЛЕНО: все стадионы работают
   stadiums: { local: false, school: false, city: false, regional: false, national: false, olympic: false, legendary: false },
   infrastructure: { stadium: 0, academy: 0, scouts: 0, sponsors: 0 },
   leagueLevel: 0, prestige: 0,
@@ -668,12 +659,14 @@ let gameState = {
   activeBuffs: {},
   lastMinigameTime: 0,
   lastSaveTime: Date.now(),
-  lastFansCheck: 0, // Для проверки на читы
+  lastEnergyRegenTime: Date.now(),
+  lastFansCheck: 0,
+  lastFansCheckValue: 0,
   stats: { matchesPlayed: 0, wins: 0, draws: 0, losses: 0, recentMatches: [] },
   username: 'Player', userId: null, lastSync: 0
 };
 
-const SAVE_KEY = 'football_tycoon_save_v13';
+const SAVE_KEY = 'football_tycoon_save_v15';
 let tg = null;
 let leaderboardUnsubscribe = null;
 let passiveIncomeInterval = null;
@@ -684,9 +677,7 @@ let buffUpdateInterval = null;
 let seasonTimerInterval = null;
 let cheatCheckInterval = null;
 
-function isDeveloper() {
-  return gameState.userId === DEVELOPER_USER_ID;
-}
+function isDeveloper() { return gameState.userId === DEVELOPER_USER_ID; }
 
 function initTelegram() {
   tg = window.Telegram?.WebApp;
@@ -700,18 +691,16 @@ function initTelegram() {
     gameState.username = user.first_name || 'Player'; 
     gameState.userId = user.id.toString();
   }
-  
   if (isDeveloper()) {
     document.body.classList.add('is-developer');
     console.log('%c🔧 DEVELOPER MODE ACTIVATED', 'color: #10b981; font-size: 14px; font-weight: bold;');
   }
-  
   window.haptic = (type = 'light') => { if (tg.HapticFeedback) tg.HapticFeedback.impactOccurred(type); else if (navigator.vibrate) navigator.vibrate(20); };
   window.hapticSuccess = () => { if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success'); else if (navigator.vibrate) navigator.vibrate([30, 50, 30]); };
   if (tg.BackButton) tg.BackButton.onClick(() => switchTab('match'));
 }
 
-// ========== ИСПРАВЛЕНО: сброс стадионов всем игрокам ==========
+// ИСПРАВЛЕНО: стадионы загружаются из Firebase и localStorage корректно
 async function syncWithFirebase() {
   if (!gameState.userId || !firebaseReady) return;
   try {
@@ -735,8 +724,18 @@ async function syncWithFirebase() {
           gameState.hardware[key] = Math.max(gameState.hardware[key] || 0, data.hardware[key] || 0);
         }
       }
-      // Сброс стадионов - все false
-      gameState.stadiums = { local: false, school: false, city: false, regional: false, national: false, olympic: false, legendary: false };
+      // ИСПРАВЛЕНО: загружаем стадионы из Firebase
+      if (data.stadiums) {
+        gameState.stadiums = {
+          local: data.stadiums.local || false,
+          school: data.stadiums.school || false,
+          city: data.stadiums.city || false,
+          regional: data.stadiums.regional || false,
+          national: data.stadiums.national || false,
+          olympic: data.stadiums.olympic || false,
+          legendary: data.stadiums.legendary || false
+        };
+      }
       
       if (data.infrastructure) {
         for (let key in gameState.infrastructure) {
@@ -744,7 +743,7 @@ async function syncWithFirebase() {
         }
       }
       gameState.leagueLevel = Math.max(gameState.leagueLevel || 0, data.leagueLevel || 0);
-      gameState.prestige = 0; // Сброс престижей
+      gameState.prestige = 0;
       gameState.completedAchievements = data.completedAchievements || gameState.completedAchievements || [];
       gameState.dailyStreak = Math.max(gameState.dailyStreak || 0, data.dailyStreak || 0);
       gameState.lastDailyReward = Math.max(gameState.lastDailyReward || 0, data.lastDailyReward || 0);
@@ -756,7 +755,7 @@ async function syncWithFirebase() {
         gameState.stats.losses = Math.max(gameState.stats.losses || 0, data.stats.losses || 0);
       }
       
-      console.log('✅ Данные загружены из Firebase (стадионы сброшены)');
+      console.log('✅ Данные загружены из Firebase (стадионы сохранены)');
     } else {
       await playerRef.set({
         username: gameState.username,
@@ -821,22 +820,18 @@ async function updatePlayerData() {
   }
 }
 
-// ========== ИСПРАВЛЕНО: проверка на подозрительную активность ==========
 function checkForSuspiciousActivity() {
   const now = Date.now();
-  const timeDiff = (now - (gameState.lastFansCheck || now)) / 1000; // в секундах
+  const timeDiff = (now - (gameState.lastFansCheck || now)) / 1000;
   
   if (gameState.lastFansCheck && timeDiff > 0) {
     const fansGained = gameState.fans - (gameState.lastFansCheckValue || 0);
     const fansPerSecond = fansGained / timeDiff;
     
-    // Подозрительно: больше 1000 фанатов в секунду
     if (fansPerSecond > 1000) {
       notifyDeveloper(`⚠️ ПОДОЗРИТЕЛЬНАЯ АКТИВНОСТЬ!\n\nИгрок: ${gameState.username} (ID: ${gameState.userId})\nСкорость: ${Math.floor(fansPerSecond)} фанатов/сек\nВсего фанатов: ${formatNumber(gameState.fans)}\nВремя: ${new Date().toLocaleString()}`);
-      console.warn('%c️ SUSPICIOUS ACTIVITY DETECTED!', 'color: #ef4444; font-size: 14px; font-weight: bold;');
     }
     
-    // Подозрительно: больше 100 матчей за минуту
     const recentMatches = gameState.stats.recentMatches.filter(m => now - m.time < 60000);
     if (recentMatches.length > 100) {
       notifyDeveloper(`⚠️ ПОДОЗРИТЕЛЬНАЯ АКТИВНОСТЬ!\n\nИгрок: ${gameState.username} (ID: ${gameState.userId})\nМатчей за минуту: ${recentMatches.length}\nВсего фанатов: ${formatNumber(gameState.fans)}`);
@@ -849,24 +844,17 @@ function checkForSuspiciousActivity() {
 
 function notifyDeveloper(message) {
   if (isDeveloper()) {
-    // Показываем уведомление разработчику
     const alertDiv = document.createElement('div');
     alertDiv.className = 'fixed top-4 left-4 right-4 bg-football-red/90 text-white p-4 rounded-xl z-50 suspicious-alert';
     alertDiv.innerHTML = `
       <div class="flex items-center gap-2 mb-2">
-        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
-        <span class="font-bold">Подозрительная активность!</span>
+        <span class="font-bold">⚠️ Подозрительная активность!</span>
       </div>
       <div class="text-sm whitespace-pre-line">${message}</div>
     `;
     document.body.appendChild(alertDiv);
-    if (window.lucide) lucide.createIcons();
+    setTimeout(() => { alertDiv.remove(); }, 10000);
     
-    setTimeout(() => {
-      alertDiv.remove();
-    }, 10000);
-    
-    // Отправляем в Firebase для логов
     if (firebaseReady) {
       database.ref('suspicious_activity').push({
         userId: gameState.userId,
@@ -915,11 +903,13 @@ function renderLocalLeaderboard() {
 }
 
 function saveGame() { 
-  gameState.lastSaveTime = Date.now(); 
+  gameState.lastSaveTime = Date.now();
+  gameState.lastEnergyRegenTime = Date.now();
   try { localStorage.setItem(SAVE_KEY, JSON.stringify(gameState)); } catch (e) {} 
   updatePlayerData(); 
 }
 
+// ИСПРАВЛЕНО: стадионы загружаются из localStorage и рассчитывается офлайн-энергия
 function loadGame() {
   try {
     const saved = localStorage.getItem(SAVE_KEY);
@@ -928,16 +918,39 @@ function loadGame() {
       gameState = { ...gameState, ...parsed };
       gameState.characteristics = { ...gameState.characteristics, ...(parsed.characteristics || {}) };
       gameState.hardware = { ...gameState.hardware, ...(parsed.hardware || {}) };
-      // Сброс стадионов при загрузке
-      gameState.stadiums = { local: false, school: false, city: false, regional: false, national: false, olympic: false, legendary: false };
+      // ИСПРАВЛЕНО: загружаем стадионы из localStorage
+      if (parsed.stadiums) {
+        gameState.stadiums = {
+          local: parsed.stadiums.local || false,
+          school: parsed.stadiums.school || false,
+          city: parsed.stadiums.city || false,
+          regional: parsed.stadiums.regional || false,
+          national: parsed.stadiums.national || false,
+          olympic: parsed.stadiums.olympic || false,
+          legendary: parsed.stadiums.legendary || false
+        };
+      }
       gameState.infrastructure = { ...gameState.infrastructure, ...(parsed.infrastructure || {}) };
       gameState.completedAchievements = parsed.completedAchievements || [];
       gameState.activeBuffs = parsed.activeBuffs || {};
       gameState.stats = { ...gameState.stats, ...(parsed.stats || {}) };
       gameState.lastFansCheck = parsed.lastFansCheck || 0;
       gameState.lastFansCheckValue = parsed.lastFansCheckValue || 0;
+      
+      // ИСПРАВЛЕНО: расчёт офлайн-энергии
+      const now = Date.now();
+      const lastRegen = parsed.lastEnergyRegenTime || parsed.lastSaveTime || now;
+      const timeDiff = now - lastRegen;
+      const energyToRegen = Math.floor(timeDiff / CONFIG.energyRegenMs);
+      if (energyToRegen > 0) {
+        const oldEnergy = gameState.energy || CONFIG.baseMaxEnergy;
+        gameState.energy = Math.min(CONFIG.baseMaxEnergy, oldEnergy + energyToRegen);
+        console.log(`⚡ Офлайн-энергия: +${energyToRegen} (было ${oldEnergy}, стало ${gameState.energy})`);
+      }
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('Ошибка загрузки:', e);
+  }
 }
 
 function formatNumber(n) { n = Math.floor(n); if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B'; if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M'; if (n >= 1e4) return (n / 1e3).toFixed(1) + 'K'; return n.toLocaleString('ru-RU'); }
@@ -950,9 +963,7 @@ function getCurrentLeague() {
   return currentLeague;
 }
 
-function getPrestigeMultiplier() {
-  return 1 + (gameState.prestige * 0.25);
-}
+function getPrestigeMultiplier() { return 1 + (gameState.prestige * 0.25); }
 
 function getBuffMultiplier(statId) {
   let multiplier = 1;
@@ -988,7 +999,6 @@ function getAcademyBonus() {
   return INFRASTRUCTURE.find(i => i.id === 'academy').levels[level - 1].bonus;
 }
 
-// ИСПРАВЛЕНО: все купленные стадионы работают
 function getFansPerSecond() {
   let total = 0;
   STADIUMS.forEach(s => {
@@ -1090,7 +1100,7 @@ function updateHeaderUI() {
       delete gameState.activeBuffs[buffId];
     }
   }
-  buffsContainer.innerHTML = activeBuffs.map(b => `<div class="buff-active px-2 py-1 rounded text-[10px] text-football-purple border flex items-center gap-1"><i data-lucide="zap" class="w-3 h-3"></i>${b.name} <span class="text-tg-muted">${b.time}</span></div>`).join('');
+  buffsContainer.innerHTML = activeBuffs.map(b => `<div class="buff-active px-2 py-1 rounded text-[10px] text-football-purple border flex items-center gap-1"><span>⚡</span>${b.name} <span class="text-tg-muted">${b.time}</span></div>`).join('');
   
   const dailyBadge = document.getElementById('dailyBadge');
   if (canClaimDailyReward()) dailyBadge.classList.remove('hidden');
@@ -1102,6 +1112,7 @@ function startEnergyRegen() {
   energyRegenInterval = setInterval(() => {
     if (gameState.energy < CONFIG.baseMaxEnergy) {
       gameState.energy = Math.min(CONFIG.baseMaxEnergy, gameState.energy + 1);
+      gameState.lastEnergyRegenTime = Date.now();
       updateHeaderUI();
     }
   }, CONFIG.energyRegenMs);
@@ -1146,6 +1157,7 @@ function renderServices() {
   container.querySelectorAll('.service-btn:not([disabled])').forEach(btn => { btn.addEventListener('click', () => useService(btn.dataset.service)); });
 }
 
+// ИСПРАВЛЕНО: иконка победы отображается корректно
 function renderRecentMatches() {
   const container = document.getElementById('recentMatches');
   document.getElementById('matchesCount').textContent = gameState.stats.matchesPlayed + ' сыграно';
@@ -1153,12 +1165,11 @@ function renderRecentMatches() {
   container.innerHTML = gameState.stats.recentMatches.slice(0, 5).map(m => {
     const resultClass = m.result === 'win' ? 'result-win' : m.result === 'draw' ? 'result-draw' : 'result-lose';
     const resultText = m.result === 'win' ? 'Победа' : m.result === 'draw' ? 'Ничья' : 'Поражение';
-    const resultIcon = m.result === 'win' ? '🏆' : m.result === 'draw' ? '' : '';
+    const resultIcon = m.result === 'win' ? '🏆' : m.result === 'draw' ? '🤝' : '';
     return `<div class="flex items-center justify-between p-2 ${resultClass} rounded-lg border"><div class="flex items-center gap-2"><span class="text-base">${resultIcon}</span><span class="text-xs font-bold">${resultText}</span></div><div class="flex items-center gap-3 text-[11px]"><span class="text-football-blue flex items-center gap-0.5"><i data-lucide="users" class="w-3 h-3"></i>+${formatNumber(m.fans)}</span><span class="text-football-gold flex items-center gap-0.5"><i data-lucide="coins" class="w-3 h-3"></i>+${formatNumber(m.coins)}</span></div></div>`;
   }).join('');
 }
 
-// ИСПРАВЛЕНО: показ ID только разработчику
 function renderLeaderboard(players, myRank) {
   const container = document.getElementById('leaderboardList');
   document.getElementById('myRank').textContent = '#' + Math.min(myRank, 999);
@@ -1177,13 +1188,12 @@ function renderLeaderboard(players, myRank) {
     const rank = index + 1;
     const isMe = player.userId === gameState.userId;
     const rankClass = rank === 1 ? 'rank-1' : rank === 2 ? 'rank-2' : rank === 3 ? 'rank-3' : 'bg-tg-bg/40';
-    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '' : `#${rank}`;
+    const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
     const prize = prizes[rank] || '';
     
-    // Показываем ID только разработчику
     let usernameDisplay;
     if (developerMode) {
-      usernameDisplay = `${player.username}\n<span class="text-[9px] text-tg-muted">ID: ${player.userId}</span>`;
+      usernameDisplay = `${player.username}<br><span class="text-[9px] text-tg-muted">ID: ${player.userId}</span>`;
     } else {
       usernameDisplay = isMe ? `${player.username} (ты)` : `Игрок #${rank}`;
     }
@@ -1238,7 +1248,6 @@ function renderHardware() {
   container.querySelectorAll('.buy-hw-btn').forEach(btn => { btn.addEventListener('click', () => buyHardware(btn.dataset.hw)); });
 }
 
-// ИСПРАВЛЕНО: все стадионы работают, показ купленных
 function renderStadiums() {
   const container = document.getElementById('stadiumsList');
   container.innerHTML = STADIUMS.map(stadium => {
@@ -1545,7 +1554,7 @@ function calculateMatchResult() {
 function doPrestige() {
   if (!canPrestige()) {
     const league = getCurrentLeague();
-    alert(` Недостаточно требований для престижа!\n\n📊 Твои показатели:\n• Фанаты: ${formatNumber(gameState.totalFansEarned)} / ${formatNumber(CONFIG.prestigeThreshold)}\n• Лига: ${league.name} (нужна Легендарная+)\n\n Требования:\n• 1,000,000 фанатов\n• Легендарная лига или выше`);
+    alert(`❌ Недостаточно требований для престижа!\n\n📊 Твои показатели:\n• Фанаты: ${formatNumber(gameState.totalFansEarned)} / ${formatNumber(CONFIG.prestigeThreshold)}\n• Лига: ${league.name} (нужна Легендарная+)\n\n✅ Требования:\n• 1,000,000 фанатов\n• Легендарная лига или выше`);
     return;
   }
   
@@ -1709,7 +1718,7 @@ function claimDailyReward() {
   checkAchievements();
   document.getElementById('dailyModal').classList.add('hidden');
   document.getElementById('dailyModal').classList.remove('flex');
-  showFloatingNumber(document.body, `+${formatCoins(reward)} `);
+  showFloatingNumber(document.body, `+${formatCoins(reward)} 🎁`);
   if (window.hapticSuccess) window.hapticSuccess();
   if (gameState.dailyStreak % 7 === 0) setTimeout(() => alert('🎉 Недельная серия завершена! Бонус получен!'), 500);
 }
@@ -1742,7 +1751,7 @@ function claimOfflineProgress() {
   updateHeaderUI();
   document.getElementById('offlineModal').classList.add('hidden');
   document.getElementById('offlineModal').classList.remove('flex');
-  showFloatingNumber(document.body, `+${formatCoins(earned)} `);
+  showFloatingNumber(document.body, `+${formatCoins(earned)} 💰`);
   if (window.hapticSuccess) window.hapticSuccess();
 }
 
@@ -1771,22 +1780,12 @@ function updateMinigameCooldown() {
   }
 }
 
-// ИСПРАВЛЕНО: удаление старых обработчиков перед добавлением новых
+// ИСПРАВЛЕНО: убрано клонирование кнопок (вызывало баг с двойными наградами)
 function startMinigame(type) {
   if (!canPlayMinigame()) {
     alert('Подожди кулдаун!');
     return;
   }
-  
-  // Удаляем все предыдущие обработчики
-  document.getElementById('penaltyBtn').replaceWith(document.getElementById('penaltyBtn').cloneNode(true));
-  document.getElementById('dribblingBtn').replaceWith(document.getElementById('dribblingBtn').cloneNode(true));
-  document.getElementById('goalkeeperBtn').replaceWith(document.getElementById('goalkeeperBtn').cloneNode(true));
-  
-  // Переназначаем обработчики
-  document.getElementById('penaltyBtn').addEventListener('click', () => startMinigame('penalty'));
-  document.getElementById('dribblingBtn').addEventListener('click', () => startMinigame('dribbling'));
-  document.getElementById('goalkeeperBtn').addEventListener('click', () => startMinigame('goalkeeper'));
   
   if (type === 'penalty') startPenaltyGame();
   else if (type === 'dribbling') startDribblingGame();
@@ -2068,7 +2067,7 @@ function startSeasonTimer() {
 
 function startCheatCheck() {
   if (cheatCheckInterval) clearInterval(cheatCheckInterval);
-  cheatCheckInterval = setInterval(checkForSuspiciousActivity, 30000); // Каждые 30 секунд
+  cheatCheckInterval = setInterval(checkForSuspiciousActivity, 30000);
 }
 
 function init() {
@@ -2143,9 +2142,9 @@ function init() {
     renderLocalLeaderboard();
   }
   
-  console.log('%c⚽ Football Tycoon v13 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold');
-  console.log('%cВсе стадионы сброшены, престижи сброшены', 'color: #fbbf24; font-size: 12px;');
-  console.log('%cСинхронизированный таймер: 120 часов', 'color: #3b82f6; font-size: 12px;');
+  console.log('%c Football Tycoon v15 запущен!', 'color: #10b981; font-size: 16px; font-weight: bold;');
+  console.log('%c✅ Стадионы сохраняются', 'color: #3b82f6; font-size: 12px;');
+  console.log('%c✅ Энергия копится офлайн', 'color: #10b981; font-size: 12px;');
 }
 
 const origRenderCharacteristics = renderCharacteristics;
